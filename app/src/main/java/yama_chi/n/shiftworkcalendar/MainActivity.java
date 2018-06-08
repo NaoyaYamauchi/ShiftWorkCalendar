@@ -249,7 +249,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
         MakeRequestTask(GoogleAccountCredential credential) {
             HttpTransport transport = AndroidHttp.newCompatibleTransport();
-            JacksonFactory jsonFactory = JacksonFactory.getDefaultInstance();//元はJsonFactiory型
+            JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();//元はJsonFactiory型
             mService = new com.google.api.services.calendar.Calendar.Builder(transport, jsonFactory, credential)
                     .setApplicationName("Google Calendar API Android QuickStart")
                     .build();
