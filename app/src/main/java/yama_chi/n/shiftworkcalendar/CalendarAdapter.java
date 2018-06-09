@@ -67,9 +67,6 @@ public class CalendarAdapter extends BaseAdapter {
                 / 7 - (int) dp, (parent.getHeight() / 8));
         convertView.setLayoutParams(params);
 
-        Log.d("getHeight", String.valueOf(parent.getHeight()));
-        Log.d("dp", String.valueOf(dp));
-        Log.d("getWeeks", String.valueOf(mDateManager.getWeeks()));
         //日付の表示
         SimpleDateFormat dateFormat = new SimpleDateFormat("d", Locale.US);
         //これも元は[Locale.US]
