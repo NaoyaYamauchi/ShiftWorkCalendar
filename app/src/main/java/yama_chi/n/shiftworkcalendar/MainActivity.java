@@ -18,6 +18,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -38,15 +39,15 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.DateTime;
 import com.google.api.client.util.ExponentialBackOff;
-
-import com.google.api.services.calendar.model.Calendar;
 import com.google.api.services.calendar.CalendarScopes;
+import com.google.api.services.calendar.model.Calendar;
+import com.google.api.services.calendar.model.CalendarList;
 import com.google.api.services.calendar.model.CalendarListEntry;
 import com.google.api.services.calendar.model.Event;
-import com.google.api.services.calendar.model.Events;
+import com.google.api.services.calendar.model.EventDateTime;
+import com.google.api.services.calendar.model.EventReminder;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -54,7 +55,7 @@ import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
 
-public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks{
+public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks {
 
     //Googleカレンダーとの連携のためのメンバ変数
 
@@ -274,13 +275,13 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         dialog.show();
     }
 
-    private class MakeRequestTask extends AsyncTask<Void, Void, List<String>> {
+    private class MakeRequestTask extends AsyncTask<Void, Void, String> {
         private com.google.api.services.calendar.Calendar mService = null;
         private Exception mLastError = null;
 
         MakeRequestTask(GoogleAccountCredential credential) {
             HttpTransport transport = AndroidHttp.newCompatibleTransport();
-            JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();//元はJsonFactiory型
+            JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
 
             mService = new com.google.api.services.calendar.Calendar.Builder(transport, jsonFactory, credential)
                     .setApplicationName("Google Calendar API Android QuickStart")
@@ -288,10 +289,9 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         }
 
         @Override
-        protected List<String> doInBackground(Void... params) {
+        protected String doInBackground(Void... params) {
             try {
-                createCalendar();
-                return getDataFromApi();
+                return createCalendar();
             } catch (Exception e) {
                 mLastError = e;
                 cancel(true);
@@ -300,36 +300,114 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         }
 
         private String createCalendar() throws IOException {
+            String pageToken = null;
+            boolean calendarBool = false;
+
+            do {
+                CalendarList calendarList = mService.calendarList().list().setPageToken(pageToken).execute();
+                List<CalendarListEntry> items = calendarList.getItems();
+
+                for (CalendarListEntry calendarListEntry : items) {
+                    if (calendarListEntry.getSummary().equals("WorkShift")) {
+                        Log.d("root", "root!");
+                        calendarBool = true;
+                    }
+                }
+
+                pageToken = calendarList.getNextPageToken();
+            } while (pageToken != null);
             // 新規にカレンダーを作成する
             com.google.api.services.calendar.model.Calendar calendar = new Calendar();
-            // カレンダーにタイトルを設定する
-            calendar.setSummary("CalendarTitle");
-            // カレンダーにタイムゾーンを設定する
-            calendar.setTimeZone("Asia/Tokyo");
 
-            // 作成したカレンダーをGoogleカレンダーに追加する
-            Calendar createdCalendar = mService.calendars().insert(calendar).execute();
-            String calendarId = createdCalendar.getId();
+            if (!calendarBool) {
+                // カレンダーにタイトルを設定する
+                calendar.setSummary("WorkShift");
+                // カレンダーにタイムゾーンを設定する
+                calendar.setTimeZone("Asia/Tokyo");
+                // 作成したカレンダーをGoogleカレンダーに追加する
+                Calendar createdCalendar = mService.calendars().insert(calendar).execute();
 
-            // カレンダー一覧から新規に作成したカレンダーのエントリを取得する
-            CalendarListEntry calendarListEntry = mService.calendarList().get(calendarId).execute();
+                String calendarId = createdCalendar.getId();
 
-            // カレンダーのデフォルトの背景色を設定する
-            calendarListEntry.setBackgroundColor("#ff0000");
+                // カレンダー一覧から新規に作成したカレンダーのエントリを取得する
+                CalendarListEntry calendarListEntry = mService.calendarList().get(calendarId).execute();
 
-            // カレンダーのデフォルトの背景色をGoogleカレンダーに反映させる
-            CalendarListEntry updatedCalendarListEntry =
-                    mService.calendarList()
-                            .update(calendarListEntry.getId(), calendarListEntry)
-                            .setColorRgbFormat(true)
-                            .execute();
+                // カレンダーのデフォルトの背景色を設定する
+                calendarListEntry.setBackgroundColor("#ff0000");
 
-            // 新規に作成したカレンダーのIDを返却する
-            return calendarId;
+                // カレンダーのデフォルトの背景色をGoogleカレンダーに反映させる
+                CalendarListEntry updatedCalendarListEntry =
+                        mService.calendarList()
+                                .update(calendarListEntry.getId(), calendarListEntry)
+                                .setColorRgbFormat(true)
+                                .execute();
+
+                System.out.println(calendarId);
+
+                SharedPreferences sharedPreferences = getSharedPreferences("Id",Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putString("ShiftCalendarId",calendarId);
+                editor.apply();
+                // 新規に作成したカレンダーのIDを返却する
+                return calendarId;
+            } else {
+                //シフト登録のテスト
+                Event event = new Event()
+                        .setSummary("ShiftWorkText")//タイトル
+                        .setLocation("Sapporo")//場所
+                        .setDescription("説明");//概要
+                //開始時間
+                DateTime startDateTime = new DateTime("2018-06-13T17:00:00.000+09:00");
+                EventDateTime start = new EventDateTime()
+                        .setDateTime(startDateTime)
+                        .setTimeZone("Asia/Tokyo");
+                event.setStart(start);
+
+                //終了時間
+                DateTime endDateTime = new DateTime("2018-06-13T19:00:00.000+09:00");
+                EventDateTime end = new EventDateTime()
+                        .setDateTime(endDateTime)
+                        .setTimeZone("Asia/Tokyo");
+                event.setEnd(end);
+
+                //RRULE:FREQ=DAILY;COUNT=4　だと、4日繰り返す
+                //String[] recurrence = new String[]{"RRULE:FREQ=DAILY;COUNT=4"};
+                //event.setRecurrence(Arrays.asList(recurrence));
+
+                //追加するゲストのアカウント
+                //EventAttendee[] attendess = new EventAttendee[]{
+                //        new EventAttendee().setEmail("doya@example.com"),
+                //        new EventAttendee().setEmail("wrightism@gmail.com"),
+                //};
+                //event.setAttendees(Arrays.asList(attendess));
+
+                //リマインダ　"email"はメール、"popup"は通知。どちらも分単位で指定
+                //EventReminder内に宣言しないとリマインダOFFになる
+                EventReminder[] reminderOverrides = new EventReminder[]{
+                        // new EventReminder().setMethod("email").setMinutes(24*60),
+                        //   new EventReminder().setMethod("popup").setMinutes(1),
+                };
+
+                Event.Reminders reminders = new Event.Reminders()
+                        .setUseDefault(false)
+                        .setOverrides(Arrays.asList(reminderOverrides));
+                event.setReminders(reminders);
+
+                SharedPreferences sharedPreferences = getSharedPreferences("Id",Context.MODE_PRIVATE);
+                String calendarId = sharedPreferences.getString("ShiftCalendarId",null);
+
+                if(calendarId.isEmpty()||calendarId==null){
+                    Toast.makeText(MainActivity.this, "カレンダーが見つかりませんでした", Toast.LENGTH_LONG).show();
+
+                }
+
+                event = mService.events().insert(calendarId, event).execute();
+                System.out.printf("Event created:%s\n", event.getHtmlLink());
+                return null;
+            }
         }
 
-
-
+        /*
         //カレンダーのデータ取得
         private List<String> getDataFromApi() throws IOException {
             DateTime now = new DateTime(System.currentTimeMillis());
@@ -355,6 +433,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             }
             return eventStrings;
         }
+        */
 
 
         @Override
@@ -364,16 +443,12 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         }
 
         @Override
-        protected void onPostExecute(List<String> output) {
+        protected void onPostExecute(String output) {
             mProgress.hide();
-            if (output == null || output.size() == 0) {
+            if (output == null || output.isEmpty()) {
                 mOutputText.setText("No results returned.");
             } else {
-                output.add(0, "Data retrieved using the Google Calendar API:");
-                //   for(int i =0;i<=31;i++){
-                mOutputText.setText(output.get(1) + "\n");
-                // }
-
+                mOutputText.setText("カレンダーを作成しました。 " + output);
             }
 
         }
