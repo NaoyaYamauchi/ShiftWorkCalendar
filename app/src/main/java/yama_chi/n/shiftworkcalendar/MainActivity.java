@@ -1,9 +1,5 @@
 package yama_chi.n.shiftworkcalendar;
 
-//ここから
-
-//ここまで
-
 import android.Manifest;
 import android.accounts.AccountManager;
 import android.app.Dialog;
@@ -11,6 +7,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -49,11 +46,11 @@ import com.google.api.services.calendar.model.EventReminder;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
-
 
 public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks {
 
@@ -70,11 +67,11 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     ProgressDialog mProgress;
     private TextView mOutputText;
     private Button mCallApiButton;
-    private String mCalendarId;
     private com.google.api.services.calendar.Calendar mService = null;
     private Exception mLastError = null;
 
     //アプリ内のカレンダーのメンバ変数
+    private List<Date> mDateArray;
     private TextView mTitleText;
     private Button mPrevButton;
     private Button mNextButton;
@@ -86,6 +83,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
 
         mTitleText = findViewById(R.id.titleText);
         mPrevButton = findViewById(R.id.prevButton);
@@ -111,11 +109,16 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         mCalendarGridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Toast.makeText(MainActivity.this, "" + mCalendarAdapter.getTitle(), Toast.LENGTH_LONG).show();
+                //日付を取得する
+                Date date = mCalendarAdapter.getDate(position);
+                Log.d("root", String.valueOf(date));
+                Toast.makeText(MainActivity.this, "" + String.valueOf(date), Toast.LENGTH_LONG).show();
+
             }
         });
-        mTitleText.setText(mCalendarAdapter.getTitle());
 
+        mTitleText.setText(mCalendarAdapter.getTitle());
+        //
 
         //Googleカレンダー
         LinearLayout activityLayout = new LinearLayout(this);
@@ -130,7 +133,9 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT);
 
-        mCallApiButton = new Button(this);
+        //カレンダーとの連携
+
+        mCallApiButton = findViewById(R.id.button);
         mCallApiButton.setText(BUTTON_TEXT);
         mCallApiButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -141,7 +146,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 mCallApiButton.setEnabled(true);
             }
         });
-        activityLayout.addView(mCallApiButton);
+        // activityLayout.addView(mCallApiButton);
 
         mOutputText = new TextView(this);
         mOutputText.setLayoutParams(tlp);
@@ -154,13 +159,12 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         mProgress = new ProgressDialog(this);
         mProgress.setMessage("Google CalendarのAPIの呼び出し中…");
 
-        setContentView(activityLayout);
+        //setContentView(activityLayout);
 
         mCredential = GoogleAccountCredential.usingOAuth2(
                 getApplicationContext(), Arrays.asList(SCOPES))
                 .setBackOff(new ExponentialBackOff());
     }
-
 
     private void getResultsFromApi() {
         if (!isGooglePlayServicesAvailable()) {
@@ -319,16 +323,16 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
                             calendarId = String.valueOf(calendarListEntry.getId());
 
-                             Log.d("root", calendarId);
+                            Log.d("root", calendarId);
 
                             SharedPreferences.Editor editor = sharedPreferences.edit();
-                            editor.putString("ShiftCalendarId", mCalendarId);
+                            editor.putString("ShiftCalendarId", calendarId);
                             editor.apply();
 
 
                             //showAlertDialog();
                         }
-                        calendarId=calendarListEntry.getId();
+                        calendarId = calendarListEntry.getId();
                         calendarBool = true;
                         break;
                     }
@@ -414,10 +418,8 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 event = mService.events().insert(calendarId, event).execute();
                 System.out.printf("Event created:%s\n", event.getHtmlLink());
 
-
                 return null;
             }
-
         }
 
 

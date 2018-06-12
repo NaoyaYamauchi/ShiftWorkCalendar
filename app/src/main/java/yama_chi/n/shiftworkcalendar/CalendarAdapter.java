@@ -43,6 +43,9 @@ public class CalendarAdapter extends BaseAdapter {
     public Object getItem(int position) {
         return null;
     }
+    public Date getDate(int position){
+        return mDateArray.get(position);
+    }
 
     @Override
     public long getItemId(int position) {
@@ -71,6 +74,8 @@ public class CalendarAdapter extends BaseAdapter {
         SimpleDateFormat dateFormat = new SimpleDateFormat("d", Locale.US);
         //これも元は[Locale.US]
         holder.dateText.setText(dateFormat.format(mDateArray.get(position)));
+        //holder.dateText.setText(dateFormat.format(mDateArray.get(position\n"シフト名"));
+        //
 
         //当月以外のセルをグレーアウト
         if (mDateManager.inCurrentMonth(mDateArray.get(position))) {
