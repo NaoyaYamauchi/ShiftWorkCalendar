@@ -70,6 +70,10 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     ProgressDialog mProgress;
     private TextView mOutputText;
     private Button mCallApiButton;
+    private String mCalendarId;
+    private com.google.api.services.calendar.Calendar mService = null;
+    private Exception mLastError = null;
+
     //アプリ内のカレンダーのメンバ変数
     private TextView mTitleText;
     private Button mPrevButton;
@@ -276,8 +280,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     }
 
     private class MakeRequestTask extends AsyncTask<Void, Void, String> {
-        private com.google.api.services.calendar.Calendar mService = null;
-        private Exception mLastError = null;
 
         MakeRequestTask(GoogleAccountCredential credential) {
             HttpTransport transport = AndroidHttp.newCompatibleTransport();
@@ -303,17 +305,34 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             String pageToken = null;
             boolean calendarBool = false;
 
+            SharedPreferences sharedPreferences = getSharedPreferences("Id", Context.MODE_PRIVATE);
+            String calendarId = sharedPreferences.getString("ShiftCalendarId", "null");
+
             do {
                 CalendarList calendarList = mService.calendarList().list().setPageToken(pageToken).execute();
                 List<CalendarListEntry> items = calendarList.getItems();
 
+
                 for (CalendarListEntry calendarListEntry : items) {
                     if (calendarListEntry.getSummary().equals("WorkShift")) {
-                        Log.d("root", "root!");
+                        if (!calendarListEntry.getId().equals(calendarId)) {
+
+                            calendarId = String.valueOf(calendarListEntry.getId());
+
+                             Log.d("root", calendarId);
+
+                            SharedPreferences.Editor editor = sharedPreferences.edit();
+                            editor.putString("ShiftCalendarId", mCalendarId);
+                            editor.apply();
+
+
+                            //showAlertDialog();
+                        }
+                        calendarId=calendarListEntry.getId();
                         calendarBool = true;
+                        break;
                     }
                 }
-
                 pageToken = calendarList.getNextPageToken();
             } while (pageToken != null);
             // 新規にカレンダーを作成する
@@ -327,7 +346,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 // 作成したカレンダーをGoogleカレンダーに追加する
                 Calendar createdCalendar = mService.calendars().insert(calendar).execute();
 
-                String calendarId = createdCalendar.getId();
+                calendarId = createdCalendar.getId();
 
                 // カレンダー一覧から新規に作成したカレンダーのエントリを取得する
                 CalendarListEntry calendarListEntry = mService.calendarList().get(calendarId).execute();
@@ -344,9 +363,8 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
                 System.out.println(calendarId);
 
-                SharedPreferences sharedPreferences = getSharedPreferences("Id",Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = sharedPreferences.edit();
-                editor.putString("ShiftCalendarId",calendarId);
+                editor.putString("ShiftCalendarId", calendarId);
                 editor.apply();
                 // 新規に作成したカレンダーのIDを返却する
                 return calendarId;
@@ -393,19 +411,16 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                         .setOverrides(Arrays.asList(reminderOverrides));
                 event.setReminders(reminders);
 
-                SharedPreferences sharedPreferences = getSharedPreferences("Id",Context.MODE_PRIVATE);
-                String calendarId = sharedPreferences.getString("ShiftCalendarId",null);
-
-                if(calendarId.isEmpty()||calendarId==null){
-                    Toast.makeText(MainActivity.this, "カレンダーが見つかりませんでした", Toast.LENGTH_LONG).show();
-
-                }
-
                 event = mService.events().insert(calendarId, event).execute();
                 System.out.printf("Event created:%s\n", event.getHtmlLink());
+
+
                 return null;
             }
+
         }
+
+
 
         /*
         //カレンダーのデータ取得
@@ -475,4 +490,32 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
 
     }
+    /*
+    private void showAlertDialog() {
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+        alertDialogBuilder.setMessage("既にGoogleカレンダーに「WorkShift」が登録されています。既存のカレンダーを使用しますか？");
+
+        alertDialogBuilder.setPositiveButton("はい", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                SharedPreferences sharedPreferences = getSharedPreferences("Id", Context.MODE_PRIVATE);
+
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putString("ShiftCalendarId", mCalendarId);
+                editor.apply();
+            }
+        });
+        alertDialogBuilder.setNegativeButton("新規に作成する", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                try {
+                    mService.calendarList().delete(mCalendarId);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                mCalendarId="update";
+            }
+        });
+    }
+     */
 }
