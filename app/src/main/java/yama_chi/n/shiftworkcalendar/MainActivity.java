@@ -45,9 +45,9 @@ import com.google.api.services.calendar.model.EventReminder;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.List;
 
 import pub.devrel.easypermissions.AfterPermissionGranted;
@@ -61,12 +61,14 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     static final int REQUEST_AUTHORIZATION = 1001;
     static final int REQUEST_GOOGLE_PLAY_SERVICES = 1002;
     static final int REQUEST_PERMISSION_GET_ACCOUNTS = 1003;
-    private static final String BUTTON_TEXT = "APIを呼び出す";
+    private static final String API_BUTTON_TEXT = "APIを呼び出す";
+    private static final String ENTRY_BUTTON_TEXT = "登録する";
     private static final String PREF_ACCOUNT_NAME = "accountName";
     private static final String[] SCOPES = {CalendarScopes.CALENDAR_READONLY};
     GoogleAccountCredential mCredential;
     Date mDate;
     private Button mCallApiButton;
+    private Button mEntryButton;
     private com.google.api.services.calendar.Calendar mService = null;
     private Exception mLastError = null;
     private String mCalendarId;
@@ -80,7 +82,9 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     private CalendarAdapter mCalendarAdapter;
     private GridView mCalendarGridView;
     private String mDateString;
-
+    //登録する日時を配列で持つ
+    private ArrayList<String> mStartList = new ArrayList<String>();
+    private ArrayList<String> mEndList = new ArrayList<String>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -116,20 +120,17 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                mFirstSelect =true;
+                mFirstSelect = true;
                 if (oldView != null) {
                     oldView.setBackgroundColor(oldGridColor);
                 }
                 //日付を取得する
                 mDate = mCalendarAdapter.getDate(position);
-                mDateString = new SimpleDateFormat("yyyy-MM-dd").format(mDate);
                 ColorDrawable colorDrawable = (ColorDrawable) view.getBackground();
                 oldGridColor = colorDrawable.getColor();
-                System.out.println(oldGridColor);
                 oldView = view;
                 view.setBackgroundColor(Color.parseColor("#FFFF00"));
                 mSelectPosition = position;
-                //Toast.makeText(MainActivity.this, "" +new SimpleDateFormat("yyyy-MM-dd").format(mDate), Toast.LENGTH_LONG).show();
             }
         });
 
@@ -149,22 +150,27 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 ViewGroup.LayoutParams.WRAP_CONTENT);
 
         //カレンダーとの連携
-
         mCallApiButton = findViewById(R.id.button);
-        mCallApiButton.setText(BUTTON_TEXT);
+        mCallApiButton.setText(API_BUTTON_TEXT);
         mCallApiButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                getResultsFromApi();
-                if(!mFirstSelect){
-                    java.util.Calendar calendar = java.util.Calendar.getInstance();
-                    //new GregorianCalendar(2002, 4, 1);
-                    calendar.setTime(mDate);
-                    calendar.add(java.util.Calendar.DATE,1);
-                    mDate= calendar.getTime();
-                    mDateString = new SimpleDateFormat("yyyy-MM-dd").format(mDate);
+                if (mDate != null) {
+                    if (mFirstSelect) {
+                        mDateString = new SimpleDateFormat("yyyy-MM-dd").format(mDate);
+                        mFirstSelect = false;
+                    } else {
+                        java.util.Calendar calendar = java.util.Calendar.getInstance();
+                        calendar.setTime(mDate);
+                        calendar.add(java.util.Calendar.DATE, 1);
+                        mDate = calendar.getTime();
+                        mDateString = new SimpleDateFormat("yyyy-MM-dd").format(mDate);
 
+                    }
+                    mStartList.add(mDateString + "T17:00:00.000+09:00");
+                    mEndList.add(mDateString + "T19:00:00.000+09:00");
                 }
+
                 Log.d("calendar", String.valueOf(mDateString));
             }
         });
@@ -176,6 +182,18 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         mCallApiButton.setEnabled(false);
         getResultsFromApi();
         mCallApiButton.setEnabled(true);
+
+        //登録ボタンの処理
+        mEntryButton = findViewById(R.id.enter_button);
+        mEntryButton.setText(ENTRY_BUTTON_TEXT);
+        mEntryButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                getResultsFromApi();
+            }
+        });
+        getResultsFromApi();
+
     }
 
     private void getResultsFromApi() {
@@ -296,51 +314,58 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     }
 
     protected void calendarEntry() throws IOException {
-        //シフト登録のテスト
-        Event event = new Event()
-                .setSummary("ShiftWorkText");//タイトル
-        //.setLocation("Sapporo")//場所
-        //.setDescription("説明");//概要
-        //開始時間
-        DateTime startDateTime = new DateTime(mDateString + "T17:00:00.000+09:00");
-        EventDateTime start = new EventDateTime()
-                .setDateTime(startDateTime)
-                .setTimeZone("Asia/Tokyo");
-        event.setStart(start);
+        for (int i = 0; i < mStartList.size(); i++) {
+            //シフト登録のテスト
+            Event event = new Event()
+                    .setSummary("ShiftWorkText");//タイトル
+            //.setLocation("Sapporo")//場所
+            //.setDescription("説明");//概要
+            //開始時間
+            DateTime startDateTime = new DateTime(mStartList.get(i));
+            EventDateTime start = new EventDateTime()
+                    .setDateTime(startDateTime)
+                    .setTimeZone("Asia/Tokyo");
+            event.setStart(start);
 
-        //終了時間
-        DateTime endDateTime = new DateTime(mDateString + "T19:00:00.000+09:00");
-        EventDateTime end = new EventDateTime()
-                .setDateTime(endDateTime)
-                .setTimeZone("Asia/Tokyo");
-        event.setEnd(end);
+            //終了時間
+            DateTime endDateTime = new DateTime(mEndList.get(i));
+            EventDateTime end = new EventDateTime()
+                    .setDateTime(endDateTime)
+                    .setTimeZone("Asia/Tokyo");
+            event.setEnd(end);
 
-        //RRULE:FREQ=DAILY;COUNT=4　だと、4日繰り返す
-        //String[] recurrence = new String[]{"RRULE:FREQ=DAILY;COUNT=4"};
-        //event.setRecurrence(Arrays.asList(recurrence));
+            //RRULE:FREQ=DAILY;COUNT=4　だと、4日繰り返す
+            //String[] recurrence = new String[]{"RRULE:FREQ=DAILY;COUNT=4"};
+            //event.setRecurrence(Arrays.asList(recurrence));
 
-        //追加するゲストのアカウント
-        //EventAttendee[] attendess = new EventAttendee[]{
-        //        new EventAttendee().setEmail("doya@example.com"),
-        //        new EventAttendee().setEmail("wrightism@gmail.com"),
-        //};
-        //event.setAttendees(Arrays.asList(attendess));
+            //追加するゲストのアカウント
+            //EventAttendee[] attendess = new EventAttendee[]{
+            //        new EventAttendee().setEmail("doya@example.com"),
+            //        new EventAttendee().setEmail("wrightism@gmail.com"),
+            //};
+            //event.setAttendees(Arrays.asList(attendess));
 
-        //リマインダ　"email"はメール、"popup"は通知。どちらも分単位で指定
-        //EventReminder内に宣言しないとリマインダOFFになる
-        EventReminder[] reminderOverrides = new EventReminder[]{
-                // new EventReminder().setMethod("email").setMinutes(24*60),
-                //   new EventReminder().setMethod("popup").setMinutes(1),
-        };
+            //リマインダ　"email"はメール、"popup"は通知。どちらも分単位で指定
+            //EventReminder内に宣言しないとリマインダOFFになる
+            EventReminder[] reminderOverrides = new EventReminder[]{
+                    // new EventReminder().setMethod("email").setMinutes(24*60),
+                    //   new EventReminder().setMethod("popup").setMinutes(1),
+            };
 
-        Event.Reminders reminders = new Event.Reminders()
-                .setUseDefault(false)
-                .setOverrides(Arrays.asList(reminderOverrides));
-        event.setReminders(reminders);
+            Event.Reminders reminders = new Event.Reminders()
+                    .setUseDefault(false)
+                    .setOverrides(Arrays.asList(reminderOverrides));
+            event.setReminders(reminders);
 
-        mFirstSelect =false;
 
-        event = mService.events().insert(mCalendarId, event).execute();
+            event = mService.events().insert(mCalendarId, event).execute();
+            System.out.println(event.getHtmlLink());
+
+        }
+        mStartList.clear();
+        mEndList.clear();
+        System.out.println(mStartList.size()+ ":" + mEndList.size());
+
 
     }
 
@@ -449,10 +474,9 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                     startActivityForResult(
                             ((UserRecoverableAuthIOException) mLastError).getIntent(),
                             MainActivity.REQUEST_AUTHORIZATION);
-                }else if(mLastError instanceof NumberFormatException){
+                } else if (mLastError instanceof NumberFormatException) {
                     //なにもしない
-                }
-                else {
+                } else {
                     Toast.makeText(MainActivity.this, "何やらエラーが発生して登録ができませんでした", Toast.LENGTH_LONG).show();
                 }
             } else {
