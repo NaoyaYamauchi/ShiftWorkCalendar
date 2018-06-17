@@ -62,18 +62,21 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     static final int REQUEST_GOOGLE_PLAY_SERVICES = 1002;
     static final int REQUEST_PERMISSION_GET_ACCOUNTS = 1003;
     private static final String API_BUTTON_TEXT = "APIを呼び出す";
-    private static final String ENTRY_BUTTON_TEXT = "登録する";
+    private static final String ENTRY_BUTTON_TEXT = "登録";
     private static final String PREF_ACCOUNT_NAME = "accountName";
     private static final String[] SCOPES = {CalendarScopes.CALENDAR_READONLY};
     GoogleAccountCredential mCredential;
     Date mDate;
+    int mOldGridColor;
     private Button mCallApiButton;
     private Button mEntryButton;
     private com.google.api.services.calendar.Calendar mService = null;
     private Exception mLastError = null;
     private String mCalendarId;
     private int mSelectPosition;
-    private boolean mFirstSelect = false;
+    private View oldView = null;
+    private int mLastSelectPosition=-101;
+    private boolean mFirstSelect = true;
     //アプリ内のカレンダーのメンバ変数
     private List<Date> mDateArray;
     private TextView mTitleText;
@@ -90,7 +93,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
 
         mTitleText = findViewById(R.id.titleText);
         mPrevButton = findViewById(R.id.prevButton);
@@ -109,25 +111,45 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 mTitleText.setText(mCalendarAdapter.getTitle());
             }
         });
-
         //GridViewの処理
         mCalendarGridView = findViewById(R.id.calendarGridView);
         mCalendarAdapter = new CalendarAdapter(this);
         mCalendarGridView.setAdapter(mCalendarAdapter);
+
         mCalendarGridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            View oldView = null;
-            int oldGridColor;
 
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                mFirstSelect = true;
+                mFirstSelect =true;
                 if (oldView != null) {
-                    oldView.setBackgroundColor(oldGridColor);
+                    oldView.setBackgroundColor(mOldGridColor);
                 }
+                if (mLastSelectPosition != -101) {
+                    Date dateSelect = mCalendarAdapter.getDate(mLastSelectPosition);
+                    String dateString = new SimpleDateFormat("MM").format(dateSelect);
+                    Date nowDateSelect = mCalendarAdapter.getDate(position);
+                    String nowDateString = new SimpleDateFormat("MM").format(nowDateSelect);
+
+                    View ButtonTapAfterView = mCalendarGridView.getChildAt(mLastSelectPosition);
+
+                    //最後にタップしたのが当月なら白にする
+                    if(dateString.equals(mCalendarAdapter.getTitle().substring(5,7))){
+                        ButtonTapAfterView.setBackgroundColor(-1);
+                    }
+                    //違うなら灰色
+                    else{
+                        ButtonTapAfterView.setBackgroundColor(-3355444);
+                    }
+                    mLastSelectPosition=-101;
+                }
+
+
+                //ButtonTapAfterView.setBackgroundColor();
+                //if(mDateString.substring())
                 //日付を取得する
                 mDate = mCalendarAdapter.getDate(position);
                 ColorDrawable colorDrawable = (ColorDrawable) view.getBackground();
-                oldGridColor = colorDrawable.getColor();
+                mOldGridColor = colorDrawable.getColor();
                 oldView = view;
                 view.setBackgroundColor(Color.parseColor("#FFFF00"));
                 mSelectPosition = position;
@@ -155,6 +177,14 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         mCallApiButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                View targetViewOld = mCalendarGridView.getChildAt(mSelectPosition);
+                targetViewOld.setBackgroundColor(mOldGridColor);
+                System.out.println(mOldGridColor);
+                mSelectPosition++;
+                View targetView = mCalendarGridView.getChildAt(mSelectPosition);
+
+                // getViewで対象のViewを更新
+                mCalendarGridView.getAdapter().getView(mSelectPosition, targetView, mCalendarGridView);
                 if (mDate != null) {
                     if (mFirstSelect) {
                         mDateString = new SimpleDateFormat("yyyy-MM-dd").format(mDate);
@@ -165,13 +195,18 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                         calendar.add(java.util.Calendar.DATE, 1);
                         mDate = calendar.getTime();
                         mDateString = new SimpleDateFormat("yyyy-MM-dd").format(mDate);
-
                     }
+                    System.out.println(mDateString);
                     mStartList.add(mDateString + "T17:00:00.000+09:00");
                     mEndList.add(mDateString + "T19:00:00.000+09:00");
-                }
 
-                Log.d("calendar", String.valueOf(mDateString));
+                    ColorDrawable colorDrawable = (ColorDrawable) targetView.getBackground();
+                    mOldGridColor = colorDrawable.getColor();
+                    targetView.setBackgroundColor(Color.parseColor("#FFFF00"));
+                    mLastSelectPosition = mSelectPosition;
+                    System.out.println(mLastSelectPosition);
+                    oldView =null;
+                }
             }
         });
 
@@ -193,6 +228,61 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             }
         });
         getResultsFromApi();
+    }
+
+    protected void calendarEntry() throws IOException {
+        for (int i = 0; i < mStartList.size(); i++) {
+            //シフト登録のテスト
+            Event event = new Event()
+                    .setSummary("ShiftWorkText");//タイトル
+            //.setLocation("Sapporo")//場所
+            //.setDescription("説明");//概要
+            //開始時間
+            DateTime startDateTime = new DateTime(mStartList.get(i));
+            EventDateTime start = new EventDateTime()
+                    .setDateTime(startDateTime)
+                    .setTimeZone("Asia/Tokyo");
+            event.setStart(start);
+
+            //終了時間
+            DateTime endDateTime = new DateTime(mEndList.get(i));
+            EventDateTime end = new EventDateTime()
+                    .setDateTime(endDateTime)
+                    .setTimeZone("Asia/Tokyo");
+            event.setEnd(end);
+
+            //RRULE:FREQ=DAILY;COUNT=4　だと、4日繰り返す
+            //String[] recurrence = new String[]{"RRULE:FREQ=DAILY;COUNT=4"};
+            //event.setRecurrence(Arrays.asList(recurrence));
+
+            //追加するゲストのアカウント
+            //EventAttendee[] attendess = new EventAttendee[]{
+            //        new EventAttendee().setEmail("doya@example.com"),
+            //        new EventAttendee().setEmail("wrightism@gmail.com"),
+            //};
+            //event.setAttendees(Arrays.asList(attendess));
+
+            //リマインダ　"email"はメール、"popup"は通知。どちらも分単位で指定
+            //EventReminder内に宣言しないとリマインダOFFになる
+            EventReminder[] reminderOverrides = new EventReminder[]{
+                    // new EventReminder().setMethod("email").setMinutes(24*60),
+                    //   new EventReminder().setMethod("popup").setMinutes(1),
+            };
+
+            Event.Reminders reminders = new Event.Reminders()
+                    .setUseDefault(false)
+                    .setOverrides(Arrays.asList(reminderOverrides));
+            event.setReminders(reminders);
+
+
+            event = mService.events().insert(mCalendarId, event).execute();
+            System.out.println(event.getHtmlLink());
+
+        }
+        mStartList.clear();
+        mEndList.clear();
+        System.out.println(mStartList.size() + ":" + mEndList.size());
+
 
     }
 
@@ -311,62 +401,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         Dialog dialog = apiAvailability.getErrorDialog(
                 MainActivity.this, connectionStatusCode, REQUEST_GOOGLE_PLAY_SERVICES);
         dialog.show();
-    }
-
-    protected void calendarEntry() throws IOException {
-        for (int i = 0; i < mStartList.size(); i++) {
-            //シフト登録のテスト
-            Event event = new Event()
-                    .setSummary("ShiftWorkText");//タイトル
-            //.setLocation("Sapporo")//場所
-            //.setDescription("説明");//概要
-            //開始時間
-            DateTime startDateTime = new DateTime(mStartList.get(i));
-            EventDateTime start = new EventDateTime()
-                    .setDateTime(startDateTime)
-                    .setTimeZone("Asia/Tokyo");
-            event.setStart(start);
-
-            //終了時間
-            DateTime endDateTime = new DateTime(mEndList.get(i));
-            EventDateTime end = new EventDateTime()
-                    .setDateTime(endDateTime)
-                    .setTimeZone("Asia/Tokyo");
-            event.setEnd(end);
-
-            //RRULE:FREQ=DAILY;COUNT=4　だと、4日繰り返す
-            //String[] recurrence = new String[]{"RRULE:FREQ=DAILY;COUNT=4"};
-            //event.setRecurrence(Arrays.asList(recurrence));
-
-            //追加するゲストのアカウント
-            //EventAttendee[] attendess = new EventAttendee[]{
-            //        new EventAttendee().setEmail("doya@example.com"),
-            //        new EventAttendee().setEmail("wrightism@gmail.com"),
-            //};
-            //event.setAttendees(Arrays.asList(attendess));
-
-            //リマインダ　"email"はメール、"popup"は通知。どちらも分単位で指定
-            //EventReminder内に宣言しないとリマインダOFFになる
-            EventReminder[] reminderOverrides = new EventReminder[]{
-                    // new EventReminder().setMethod("email").setMinutes(24*60),
-                    //   new EventReminder().setMethod("popup").setMinutes(1),
-            };
-
-            Event.Reminders reminders = new Event.Reminders()
-                    .setUseDefault(false)
-                    .setOverrides(Arrays.asList(reminderOverrides));
-            event.setReminders(reminders);
-
-
-            event = mService.events().insert(mCalendarId, event).execute();
-            System.out.println(event.getHtmlLink());
-
-        }
-        mStartList.clear();
-        mEndList.clear();
-        System.out.println(mStartList.size()+ ":" + mEndList.size());
-
-
     }
 
     private class MakeRequestTask extends AsyncTask<Void, Void, String> {
