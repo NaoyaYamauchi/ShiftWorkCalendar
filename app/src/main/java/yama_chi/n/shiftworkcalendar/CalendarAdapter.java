@@ -67,7 +67,7 @@ public class CalendarAdapter extends BaseAdapter {
         //セルのサイズ指定
         float dp = mContext.getResources().getDisplayMetrics().density;
         AbsListView.LayoutParams params = new AbsListView.LayoutParams(parent.getWidth()
-                / 7 - (int) dp, (parent.getHeight() / 8));
+                / 7 - (int) dp, (parent.getHeight() / 9));
         convertView.setLayoutParams(params);
 
         //日付の表示

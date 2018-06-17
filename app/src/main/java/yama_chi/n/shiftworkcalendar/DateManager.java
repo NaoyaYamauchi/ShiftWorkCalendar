@@ -19,7 +19,7 @@ public class DateManager {
         Date startDate = mCalender.getTime();
 
         //GridViewに表示するます計算
-        int count = 5* 7;
+        int count = 6* 7;
 
         //カレンダーに表示される前月分の日数計算
         mCalender.set(Calendar.DATE, 1);//引数は何か見ておく

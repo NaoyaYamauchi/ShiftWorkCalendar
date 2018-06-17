@@ -75,7 +75,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     private String mCalendarId;
     private int mSelectPosition;
     private View oldView = null;
-    private int mLastSelectPosition=-101;
+    private int mLastSelectPosition = -101;
     private boolean mFirstSelect = true;
     //アプリ内のカレンダーのメンバ変数
     private List<Date> mDateArray;
@@ -120,7 +120,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                mFirstSelect =true;
+                mFirstSelect = true;
                 if (oldView != null) {
                     oldView.setBackgroundColor(mOldGridColor);
                 }
@@ -133,14 +133,14 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                     View ButtonTapAfterView = mCalendarGridView.getChildAt(mLastSelectPosition);
 
                     //最後にタップしたのが当月なら白にする
-                    if(dateString.equals(mCalendarAdapter.getTitle().substring(5,7))){
+                    if (dateString.equals(mCalendarAdapter.getTitle().substring(5, 7))) {
                         ButtonTapAfterView.setBackgroundColor(-1);
                     }
                     //違うなら灰色
-                    else{
+                    else {
                         ButtonTapAfterView.setBackgroundColor(-3355444);
                     }
-                    mLastSelectPosition=-101;
+                    mLastSelectPosition = -101;
                 }
 
 
@@ -179,33 +179,53 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             public void onClick(View v) {
                 View targetViewOld = mCalendarGridView.getChildAt(mSelectPosition);
                 targetViewOld.setBackgroundColor(mOldGridColor);
-                System.out.println(mOldGridColor);
                 mSelectPosition++;
                 View targetView = mCalendarGridView.getChildAt(mSelectPosition);
+
 
                 // getViewで対象のViewを更新
                 mCalendarGridView.getAdapter().getView(mSelectPosition, targetView, mCalendarGridView);
                 if (mDate != null) {
+                    //日付が来月になる。もしくはGridViewの数が35を超えると来月（NEXTボタン）の処理に
+                    java.util.Calendar calendar = java.util.Calendar.getInstance();
+                    calendar.setTime(mDate);
                     if (mFirstSelect) {
                         mDateString = new SimpleDateFormat("yyyy-MM-dd").format(mDate);
                         mFirstSelect = false;
                     } else {
-                        java.util.Calendar calendar = java.util.Calendar.getInstance();
-                        calendar.setTime(mDate);
                         calendar.add(java.util.Calendar.DATE, 1);
                         mDate = calendar.getTime();
                         mDateString = new SimpleDateFormat("yyyy-MM-dd").format(mDate);
                     }
-                    System.out.println(mDateString);
+                    calendar.add(java.util.Calendar.DATE, 1);
+                    String nextMonth = new SimpleDateFormat("MM").format(calendar.getTime());
+
+                    Log.d("root", nextMonth);
+                    Log.d("root", mDateString);
                     mStartList.add(mDateString + "T17:00:00.000+09:00");
                     mEndList.add(mDateString + "T19:00:00.000+09:00");
 
-                    ColorDrawable colorDrawable = (ColorDrawable) targetView.getBackground();
-                    mOldGridColor = colorDrawable.getColor();
+                    if (!mCalendarAdapter.getTitle().substring(5, 7).equals(nextMonth)) {
+                        mCalendarAdapter.nextMonth();
+                        mTitleText.setText(mCalendarAdapter.getTitle());
+                        Log.d("root", String.valueOf(mSelectPosition));
+                        mSelectPosition = mSelectPosition - 28;
+                        if (mSelectPosition >= 7) {
+                            mSelectPosition -= 7;
+                        }
+                        Log.d("root", String.valueOf(mSelectPosition));
+                        targetView = mCalendarGridView.getChildAt(mSelectPosition);
+                        //ColorDrawable colorDrawable = (ColorDrawable) targetView.getBackground();
+                        //mOldGridColor = colorDrawable.getColor();
+                    }
+                    else{
+                        ColorDrawable colorDrawable = (ColorDrawable) targetView.getBackground();
+                        mOldGridColor = colorDrawable.getColor();
+                    }
                     targetView.setBackgroundColor(Color.parseColor("#FFFF00"));
+
                     mLastSelectPosition = mSelectPosition;
-                    System.out.println(mLastSelectPosition);
-                    oldView =null;
+                    oldView = null;
                 }
             }
         });
@@ -281,7 +301,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         }
         mStartList.clear();
         mEndList.clear();
-        System.out.println(mStartList.size() + ":" + mEndList.size());
 
 
     }
