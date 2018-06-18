@@ -30,4 +30,7 @@ dependencies {
     implementation('com.google.apis:google-api-services-calendar:v3-rev324-1.23.0') {
         exclude group: 'org.apache.httpcomponents'
     }
+    implementation 'com.android.support.constraint:constraint-layout:1.1.2'
+    implementation 'com.android.support:design:27.1.1'
+    implementation 'com.google.code.gson:gson:2.7'
 }

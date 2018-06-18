@@ -2,8 +2,10 @@ package yama_chi.n.shiftworkcalendar;
 
 import android.Manifest;
 import android.accounts.AccountManager;
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -12,6 +14,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -42,6 +45,10 @@ import com.google.api.services.calendar.model.CalendarListEntry;
 import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.EventReminder;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import org.json.JSONArray;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -55,8 +62,10 @@ import pub.devrel.easypermissions.EasyPermissions;
 
 public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks {
 
+    //初回起動かどうかの判定
+    public static final int PREFERENCE_INIT = 0;
+    public static final int PREFERENCE_BOOTED = 1;
     //Googleカレンダーとの連携のためのメンバ変数
-
     static final int REQUEST_ACCOUNT_PICKER = 1000;
     static final int REQUEST_AUTHORIZATION = 1001;
     static final int REQUEST_GOOGLE_PLAY_SERVICES = 1002;
@@ -88,6 +97,15 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     //登録する日時を配列で持つ
     private ArrayList<String> mStartList = new ArrayList<String>();
     private ArrayList<String> mEndList = new ArrayList<String>();
+    //保存しておくシフトパターン
+    private ArrayList<String> mPatternTitle = new ArrayList<String>();
+    private ArrayList<String> mPatternStartTime = new ArrayList<String>();
+    private ArrayList<String> mPatternEndTime = new ArrayList<String>();
+    private ArrayList<String> mPatternColor = new ArrayList<String>();
+    private ArrayList<Boolean> mPatternNotice = new ArrayList<Boolean>();
+
+    //画面下のオプションボタン群
+    private Button mPatternButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -111,6 +129,17 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 mTitleText.setText(mCalendarAdapter.getTitle());
             }
         });
+
+        //登録用Activity呼び出し
+        mPatternButton = findViewById(R.id.pattern_setting);
+        mPatternButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, EntryActivity.class);
+                startActivity(intent);
+            }
+        });
+
         //GridViewの処理
         mCalendarGridView = findViewById(R.id.calendarGridView);
         mCalendarAdapter = new CalendarAdapter(this);
@@ -204,9 +233,15 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                     Log.d("root", mDateString);
                     mStartList.add(mDateString + "T17:00:00.000+09:00");
                     mEndList.add(mDateString + "T19:00:00.000+09:00");
+                    //System.out.println();
 
                     if (!mCalendarAdapter.getTitle().substring(5, 7).equals(nextMonth)) {
                         mCalendarAdapter.nextMonth();
+
+                        targetView = mCalendarGridView.getChildAt(mSelectPosition);
+                        targetView.setBackgroundColor(Color.parseColor("#FFFF00"));
+
+
                         mTitleText.setText(mCalendarAdapter.getTitle());
                         Log.d("root", String.valueOf(mSelectPosition));
                         mSelectPosition = mSelectPosition - 28;
@@ -214,14 +249,13 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                             mSelectPosition -= 7;
                         }
                         Log.d("root", String.valueOf(mSelectPosition));
-                        targetView = mCalendarGridView.getChildAt(mSelectPosition);
                         //ColorDrawable colorDrawable = (ColorDrawable) targetView.getBackground();
                         //mOldGridColor = colorDrawable.getColor();
-                    }
-                    else{
+                    } else {
                         ColorDrawable colorDrawable = (ColorDrawable) targetView.getBackground();
                         mOldGridColor = colorDrawable.getColor();
                     }
+                    targetView = mCalendarGridView.getChildAt(mSelectPosition);
                     targetView.setBackgroundColor(Color.parseColor("#FFFF00"));
 
                     mLastSelectPosition = mSelectPosition;
@@ -248,6 +282,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             }
         });
         getResultsFromApi();
+        getState();
     }
 
     protected void calendarEntry() throws IOException {
@@ -316,6 +351,42 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         } else {
             new MakeRequestTask(mCredential).execute();
         }
+    }
+
+    //プリセットのシフト
+    private void getPreSetShift() {
+        //休み、日勤、早番、遅番、
+
+        mPatternTitle.add("休み");
+        mPatternTitle.add("日勤");
+        mPatternTitle.add("早番");
+        mPatternTitle.add("遅番");
+
+        mPatternStartTime.add("null");
+        mPatternStartTime.add("9:00");
+        mPatternStartTime.add("8:00");
+        mPatternStartTime.add("10:00");
+
+        mPatternEndTime.add("null");
+        mPatternEndTime.add("18:00");
+        mPatternEndTime.add("17:00");
+        mPatternEndTime.add("19:00");
+
+        mPatternColor.add("#FF0000");
+        mPatternColor.add("#0000FF");
+        mPatternColor.add("#00FF00");
+        mPatternColor.add("#800080");
+
+        mPatternNotice.add(false);
+        mPatternNotice.add(false);
+        mPatternNotice.add(false);
+        mPatternNotice.add(false);
+
+        Gson gson = new Gson();
+        SharedPreferences sharedPreferences = getSharedPreferences("title",Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString("titleName",gson.toJson(mPatternTitle));
+        editor.apply();
     }
 
     @AfterPermissionGranted(REQUEST_PERMISSION_GET_ACCOUNTS)
@@ -420,6 +491,59 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         Dialog dialog = apiAvailability.getErrorDialog(
                 MainActivity.this, connectionStatusCode, REQUEST_GOOGLE_PLAY_SERVICES);
         dialog.show();
+    }
+
+    //データ読み込み
+    private int getState() {
+        int state;
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        state = sharedPreferences.getInt("InitState", PREFERENCE_INIT);
+        output(String.valueOf(state));
+        return state;
+    }
+
+    //データ保存
+    private void setState(int state) {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        sharedPreferences.edit().putInt("InitState", state).commit();
+
+        //ログ表示
+        output(String.valueOf(state));
+    }
+
+    private void output(String s) {
+        //あとで消す?
+        Gson gson = new Gson();
+        SharedPreferences sharedPreferences = getSharedPreferences("title",Context.MODE_PRIVATE);
+        mPatternTitle.clear();
+        mPatternTitle = gson.fromJson(sharedPreferences.getString("titleName",null)
+                ,new TypeToken<List>(){}.getType());
+        //
+        }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
+
+        getPreSetShift();
+        alertDialog.setMessage("はじめまして");
+
+        alertDialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                //初回表示内容
+                setState(PREFERENCE_BOOTED);
+            }
+        });
+
+        //ダイアログの作成と表示
+        if (PREFERENCE_INIT == getState()) {
+            alertDialog.create();
+            alertDialog.show();
+        }
+
     }
 
     private class MakeRequestTask extends AsyncTask<Void, Void, String> {
