@@ -14,6 +14,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -47,8 +48,6 @@ import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.EventReminder;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-
-import org.json.JSONArray;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -101,7 +100,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     private ArrayList<String> mPatternTitle = new ArrayList<String>();
     private ArrayList<String> mPatternStartTime = new ArrayList<String>();
     private ArrayList<String> mPatternEndTime = new ArrayList<String>();
-    private ArrayList<String> mPatternColor = new ArrayList<String>();
+    private ArrayList<Boolean> mPatternHoliday = new ArrayList<Boolean>();
     private ArrayList<Boolean> mPatternNotice = new ArrayList<Boolean>();
 
     //画面下のオプションボタン群
@@ -182,6 +181,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 oldView = view;
                 view.setBackgroundColor(Color.parseColor("#FFFF00"));
                 mSelectPosition = position;
+
             }
         });
 
@@ -211,11 +211,9 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 mSelectPosition++;
                 View targetView = mCalendarGridView.getChildAt(mSelectPosition);
 
-
                 // getViewで対象のViewを更新
                 mCalendarGridView.getAdapter().getView(mSelectPosition, targetView, mCalendarGridView);
                 if (mDate != null) {
-                    //日付が来月になる。もしくはGridViewの数が35を超えると来月（NEXTボタン）の処理に
                     java.util.Calendar calendar = java.util.Calendar.getInstance();
                     calendar.setTime(mDate);
                     if (mFirstSelect) {
@@ -229,37 +227,50 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                     calendar.add(java.util.Calendar.DATE, 1);
                     String nextMonth = new SimpleDateFormat("MM").format(calendar.getTime());
 
-                    Log.d("root", nextMonth);
+                    //Log.d("root", nextMonth);
                     Log.d("root", mDateString);
                     mStartList.add(mDateString + "T17:00:00.000+09:00");
                     mEndList.add(mDateString + "T19:00:00.000+09:00");
                     //System.out.println();
 
+                    //日付が来月になる。もしくはGridViewの数が35を超えると来月（NEXTボタン）の処理に
                     if (!mCalendarAdapter.getTitle().substring(5, 7).equals(nextMonth)) {
+
                         mCalendarAdapter.nextMonth();
-
-                        targetView = mCalendarGridView.getChildAt(mSelectPosition);
-                        targetView.setBackgroundColor(Color.parseColor("#FFFF00"));
-
-
-                        mTitleText.setText(mCalendarAdapter.getTitle());
-                        Log.d("root", String.valueOf(mSelectPosition));
                         mSelectPosition = mSelectPosition - 28;
                         if (mSelectPosition >= 7) {
                             mSelectPosition -= 7;
                         }
+
+                        final Handler handler = new Handler();
+                        final Runnable runnable = new Runnable() {
+
+                            @Override
+                            public void run() {
+                                handler.postDelayed(this,0050);
+                                View targetViewNextMonth = mCalendarGridView.getChildAt(mSelectPosition);
+
+                                targetViewNextMonth = mCalendarGridView.getChildAt(mSelectPosition);
+                                targetViewNextMonth.setBackgroundColor(Color.parseColor("#FFFF00"));
+                                return;
+                            }
+                        };
+                        handler.post(runnable);
+
                         Log.d("root", String.valueOf(mSelectPosition));
-                        //ColorDrawable colorDrawable = (ColorDrawable) targetView.getBackground();
-                        //mOldGridColor = colorDrawable.getColor();
+
+                        mTitleText.setText(mCalendarAdapter.getTitle());
                     } else {
                         ColorDrawable colorDrawable = (ColorDrawable) targetView.getBackground();
                         mOldGridColor = colorDrawable.getColor();
+                        targetView = mCalendarGridView.getChildAt(mSelectPosition);
+                        targetView.setBackgroundColor(Color.parseColor("#FFFF00"));
+
                     }
-                    targetView = mCalendarGridView.getChildAt(mSelectPosition);
-                    targetView.setBackgroundColor(Color.parseColor("#FFFF00"));
 
                     mLastSelectPosition = mSelectPosition;
                     oldView = null;
+
                 }
             }
         });
@@ -343,8 +354,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     private void getResultsFromApi() {
         if (!isGooglePlayServicesAvailable()) {
             acquireGooglePlayServices();
-        } else if (mCredential.getSelectedAccountName() == null) {
-            chooseAccount();
         } else if (!isDeviceOnline()) {
             Toast.makeText(MainActivity.this, "端末のネットワークが使えません。\n"
                     + "オフラインになっていないか確認してください。", Toast.LENGTH_LONG).show();
@@ -362,20 +371,20 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         mPatternTitle.add("早番");
         mPatternTitle.add("遅番");
 
-        mPatternStartTime.add("null");
+        mPatternStartTime.add("9:00");
         mPatternStartTime.add("9:00");
         mPatternStartTime.add("8:00");
         mPatternStartTime.add("10:00");
 
-        mPatternEndTime.add("null");
+        mPatternEndTime.add("18:00");
         mPatternEndTime.add("18:00");
         mPatternEndTime.add("17:00");
         mPatternEndTime.add("19:00");
 
-        mPatternColor.add("#FF0000");
-        mPatternColor.add("#0000FF");
-        mPatternColor.add("#00FF00");
-        mPatternColor.add("#800080");
+        mPatternHoliday.add(true);
+        mPatternHoliday.add(false);
+        mPatternHoliday.add(false);
+        mPatternHoliday.add(false);
 
         mPatternNotice.add(false);
         mPatternNotice.add(false);
@@ -383,16 +392,19 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         mPatternNotice.add(false);
 
         Gson gson = new Gson();
-        SharedPreferences sharedPreferences = getSharedPreferences("title",Context.MODE_PRIVATE);
+        SharedPreferences sharedPreferences = getSharedPreferences("preset", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putString("titleName",gson.toJson(mPatternTitle));
+        editor.putString("title", gson.toJson(mPatternTitle));
+        editor.putString("startTime", gson.toJson(mPatternStartTime));
+        editor.putString("endTime", gson.toJson(mPatternEndTime));
+        editor.putString("holiday", gson.toJson(mPatternHoliday));
+        editor.putString("notice", gson.toJson(mPatternNotice));
         editor.apply();
     }
 
     @AfterPermissionGranted(REQUEST_PERMISSION_GET_ACCOUNTS)
     private void chooseAccount() {
-        if (EasyPermissions.hasPermissions(
-                this, Manifest.permission.GET_ACCOUNTS)) {
+        if (EasyPermissions.hasPermissions(this, Manifest.permission.GET_ACCOUNTS)) {
             String accountName = getPreferences(Context.MODE_PRIVATE)
                     .getString(PREF_ACCOUNT_NAME, null);
             if (accountName != null) {
@@ -514,20 +526,28 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     private void output(String s) {
         //あとで消す?
         Gson gson = new Gson();
-        SharedPreferences sharedPreferences = getSharedPreferences("title",Context.MODE_PRIVATE);
-        mPatternTitle.clear();
-        mPatternTitle = gson.fromJson(sharedPreferences.getString("titleName",null)
-                ,new TypeToken<List>(){}.getType());
-        //
+        if (s.equals(PREFERENCE_INIT)) {
+            TextView textView = (TextView) findViewById(R.id.textView);
+
+            SharedPreferences sharedPreferences = getSharedPreferences("title", Context.MODE_PRIVATE);
+            mPatternTitle.clear();
+
+            mPatternTitle = gson.fromJson(sharedPreferences.getString("titleName", "0")
+                    , new TypeToken<List>() {
+                    }.getType());
+            textView.setText(s);
         }
+        //
+    }
 
     @Override
-    public void onResume() {
-        super.onResume();
+    public void onStart() {
+        super.onStart();
 
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
 
-        getPreSetShift();
+
+
         alertDialog.setMessage("はじめまして");
 
         alertDialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -535,6 +555,11 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             public void onClick(DialogInterface dialog, int which) {
                 //初回表示内容
                 setState(PREFERENCE_BOOTED);
+                if (mCredential.getSelectedAccountName() == null) {
+                    chooseAccount();
+                }
+
+                getPreSetShift();
             }
         });
 
@@ -653,8 +678,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                             MainActivity.REQUEST_AUTHORIZATION);
                 } else if (mLastError instanceof NumberFormatException) {
                     //なにもしない
-                } else {
-                    Toast.makeText(MainActivity.this, "何やらエラーが発生して登録ができませんでした", Toast.LENGTH_LONG).show();
                 }
             } else {
                 Toast.makeText(MainActivity.this, "投稿がキャンセルされました。", Toast.LENGTH_LONG).show();
