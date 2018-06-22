@@ -1,7 +1,12 @@
 package yama_chi.n.shiftworkcalendar;
 
 import android.app.TimePickerDialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -13,11 +18,20 @@ import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import java.util.ArrayList;
+
 public class EntryAddActivity extends AppCompatActivity {
     private String mTitle;
     private int mStartHour, mStartMinute, mEndHour, mEndMinute;
     private boolean mStartTimePicked, mEndTimePicked, mHoliday, mNotice;
-
+    private ArrayList<String> mPatternTitle = new ArrayList<String>();
+    private ArrayList<String> mPatternStartTime = new ArrayList<String>();
+    private ArrayList<String> mPatternEndTime = new ArrayList<String>();
+    private ArrayList<Boolean> mPatternHoliday = new ArrayList<Boolean>();
+    private ArrayList<Boolean> mPatternNotice = new ArrayList<Boolean>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,7 +46,59 @@ public class EntryAddActivity extends AppCompatActivity {
         Switch noticeSwitch = findViewById(R.id.switch_notice);
         Button cancelButton = findViewById(R.id.cancel_button);
         Button OKButton = findViewById(R.id.ok_button);
+        Button delButton = findViewById(R.id.delete_button);
 
+        //初期値
+        mStartHour =9;
+        mStartMinute=0;
+        mEndHour =18;
+        mEndMinute=0;
+
+        Intent intent = getIntent();
+        int oldNewCase = intent.getIntExtra("newCase",1);
+        final int position = intent.getIntExtra("position",0);
+
+        SharedPreferences pref = getSharedPreferences("preset", MODE_PRIVATE);
+        Gson gson = new Gson();
+        mPatternTitle = gson.fromJson(pref.getString("title", ""), new TypeToken<ArrayList<String>>(){}.getType());
+        mPatternStartTime = gson.fromJson(pref.getString("startTime", ""), new TypeToken<ArrayList<String>>(){}.getType());
+        mPatternEndTime= gson.fromJson(pref.getString("endTime", ""), new TypeToken<ArrayList<String>>(){}.getType());
+        mPatternHoliday = gson.fromJson(pref.getString("holiday", ""), new TypeToken<ArrayList<Boolean>>(){}.getType());
+        mPatternNotice = gson.fromJson(pref.getString("notice", ""), new TypeToken<ArrayList<Boolean>>(){}.getType());
+
+        if(oldNewCase ==0){
+
+            mTitle = mPatternTitle.get(position);
+            mStartHour=Integer.parseInt(mPatternStartTime.get(position).substring(0,mPatternStartTime.get(position).indexOf(":")));
+            mStartMinute=Integer.parseInt(mPatternStartTime.get(position).substring(mPatternStartTime.get(position).indexOf(":")+1));
+            mEndHour=Integer.parseInt(mPatternEndTime.get(position).substring(0,mPatternEndTime.get(position).indexOf(":")));
+            mEndMinute=Integer.parseInt(mPatternEndTime.get(position).substring(mPatternEndTime.get(position).indexOf(":")+1));
+            mHoliday=mPatternHoliday.get(position);
+            mNotice=mPatternNotice.get(position);
+
+            titleEditText.setText(mTitle);
+
+            String timeString = String.format("%02d", mStartHour) + ":" + String.format("%02d", mStartMinute);
+            startTime.setText(timeString);
+            String timeStringEnd = String.format("%02d", mEndHour) + ":" + String.format("%02d", mEndMinute);
+            endTime.setText(timeStringEnd);
+
+            if (mHoliday) {
+                timeStringEnd = "--:--";
+                endTime.setText(timeStringEnd);
+                timeString = "--:--";
+                startTime.setText(timeString);
+                holidaySwitch.setChecked(true);
+            }
+
+        }
+        else{
+            String timeString = String.format("%02d", mStartHour) + ":" + String.format("%02d", mStartMinute);
+            startTime.setText(timeString);
+            String timeStringEnd = String.format("%02d", mEndHour) + ":" + String.format("%02d", mEndMinute);
+            endTime.setText(timeStringEnd);
+            delButton.setVisibility(View.INVISIBLE);
+        }
 
         //開始時間
         startTime.setOnClickListener(new View.OnClickListener() {
@@ -91,8 +157,11 @@ public class EntryAddActivity extends AppCompatActivity {
                             startTime.setText(timeStringStart);
                         }
                         if (mStartHour > mEndHour) {
-                            cautionText.setText("日付をまたいでいます");
-                        } else {
+                            cautionText.setText("日付をまたいで登録されます");
+                        }else if(mStartHour == mEndHour&&mStartMinute==mEndMinute){
+                            cautionText.setText("開始時間と終了時間が同じです");
+                        }
+                        else {
                             cautionText.setText("");
 
                         }
@@ -113,6 +182,9 @@ public class EntryAddActivity extends AppCompatActivity {
                     String timeStringStart = "--:--";
                     startTime.setText(timeStringStart);
                     mHoliday = true;
+                    if(mStartHour == mEndHour&&mStartMinute==mEndMinute){
+                        cautionText.setText("");
+                    }
 
                 } else {
                     String timeString = String.format("%02d", mStartHour) + ":" + String.format("%02d", mStartMinute);
@@ -149,23 +221,70 @@ public class EntryAddActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 finish();
-                Log.d("root","cancel");
             }
         });
         OKButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                finish();
-                //タイトルの取得
-                mTitle = titleEditText.getText().toString();
+                if(titleEditText.getText().toString()==null||titleEditText.getText().toString().isEmpty()){
+                    Toast.makeText(EntryAddActivity.this,"タイトルが未設定です",Toast.LENGTH_LONG).show();
+                }
+                else if(mStartHour == mEndHour&&mStartMinute==mEndMinute&&mHoliday==false){
+                    Toast.makeText(EntryAddActivity.this,"開始時間と終了時間が同じです",Toast.LENGTH_LONG).show();
+                }
+                else{
+                    mTitle=titleEditText.getText().toString();
+                    mPatternTitle.add(mTitle);
+                    mPatternStartTime.add(String.format("%02d", mStartHour) + ":" + String.format("%02d", mStartMinute));
+                    mPatternEndTime.add(String.format("%02d", mEndHour) + ":" + String.format("%02d", mEndMinute));
+                    mPatternHoliday.add(mHoliday);
+                    mPatternNotice.add(mNotice);
 
-                System.out.println(mTitle);
-                System.out.println(mStartHour+":"+mStartMinute);
-                System.out.println(mEndHour+":"+mEndMinute);
-                System.out.println("HOLIDAY:"+mHoliday);
-                System.out.println("NOTICE:"+mHoliday);
-                Log.d("root","OK");
+                    Gson gson = new Gson();
+                    SharedPreferences sharedPreferences = getSharedPreferences("preset", Context.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                    editor.putString("title", gson.toJson(mPatternTitle));
+                    editor.putString("startTime", gson.toJson(mPatternStartTime));
+                    editor.putString("endTime", gson.toJson(mPatternEndTime));
+                    editor.putString("holiday", gson.toJson(mPatternHoliday));
+                    editor.putString("notice", gson.toJson(mPatternNotice));
+                    editor.apply();
 
+                    finish();
+
+                }
+            }
+        });
+        delButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new AlertDialog.Builder(EntryAddActivity.this)
+                        .setMessage("削除します。本当によいのですか？")
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                mPatternTitle.remove(position);
+                                mPatternStartTime.remove(position);
+                                mPatternEndTime.remove(position);
+                                mPatternHoliday.remove(position);
+                                mPatternNotice.remove(position);
+
+                                Gson gson = new Gson();
+                                SharedPreferences sharedPreferences = getSharedPreferences("preset", Context.MODE_PRIVATE);
+                                SharedPreferences.Editor editor = sharedPreferences.edit();
+                                editor.putString("title", gson.toJson(mPatternTitle));
+                                editor.putString("startTime", gson.toJson(mPatternStartTime));
+                                editor.putString("endTime", gson.toJson(mPatternEndTime));
+                                editor.putString("holiday", gson.toJson(mPatternHoliday));
+                                editor.putString("notice", gson.toJson(mPatternNotice));
+                                editor.apply();
+
+                                finish();
+
+                            }
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
             }
         });
 

@@ -81,7 +81,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     private com.google.api.services.calendar.Calendar mService = null;
     private Exception mLastError = null;
     private String mCalendarId;
-    private int mSelectPosition;
+    private int mSelectPosition = -1;
     private View oldView = null;
     private int mLastSelectPosition = -101;
     private boolean mFirstSelect = true;
@@ -105,6 +105,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
     //画面下のオプションボタン群
     private Button mPatternButton;
+    private Button mConfigButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -138,6 +139,33 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 startActivity(intent);
             }
         });
+
+        //設定Activity呼び出し
+        mConfigButton = findViewById(R.id.config);
+        mConfigButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivityForResult(
+                        mCredential.newChooseAccountIntent(),
+                        REQUEST_ACCOUNT_PICKER);
+
+
+                final Handler handler = new Handler();
+                final Runnable runnable = new Runnable() {
+
+                    @Override
+                    public void run() {
+                        handler.postDelayed(this, 0050);
+                        getResultsFromApi();
+                        return;
+                    }
+
+                };
+                handler.post(runnable);
+
+            }
+        });
+
 
         //GridViewの処理
         mCalendarGridView = findViewById(R.id.calendarGridView);
@@ -206,71 +234,71 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         mCallApiButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                View targetViewOld = mCalendarGridView.getChildAt(mSelectPosition);
-                targetViewOld.setBackgroundColor(mOldGridColor);
-                mSelectPosition++;
-                View targetView = mCalendarGridView.getChildAt(mSelectPosition);
+                if (mSelectPosition >= 0) {
+                    View targetViewOld = mCalendarGridView.getChildAt(mSelectPosition);
+                    targetViewOld.setBackgroundColor(mOldGridColor);
+                    mSelectPosition++;
+                    View targetView = mCalendarGridView.getChildAt(mSelectPosition);
 
-                // getViewで対象のViewを更新
-                mCalendarGridView.getAdapter().getView(mSelectPosition, targetView, mCalendarGridView);
-                if (mDate != null) {
-                    java.util.Calendar calendar = java.util.Calendar.getInstance();
-                    calendar.setTime(mDate);
-                    if (mFirstSelect) {
-                        mDateString = new SimpleDateFormat("yyyy-MM-dd").format(mDate);
-                        mFirstSelect = false;
-                    } else {
-                        calendar.add(java.util.Calendar.DATE, 1);
-                        mDate = calendar.getTime();
-                        mDateString = new SimpleDateFormat("yyyy-MM-dd").format(mDate);
-                    }
-                    calendar.add(java.util.Calendar.DATE, 1);
-                    String nextMonth = new SimpleDateFormat("MM").format(calendar.getTime());
-
-                    //Log.d("root", nextMonth);
-                    Log.d("root", mDateString);
-                    mStartList.add(mDateString + "T17:00:00.000+09:00");
-                    mEndList.add(mDateString + "T19:00:00.000+09:00");
-                    //System.out.println();
-
-                    //日付が来月になる。もしくはGridViewの数が35を超えると来月（NEXTボタン）の処理に
-                    if (!mCalendarAdapter.getTitle().substring(5, 7).equals(nextMonth)) {
-
-                        mCalendarAdapter.nextMonth();
-                        mSelectPosition = mSelectPosition - 28;
-                        if (mSelectPosition >= 7) {
-                            mSelectPosition -= 7;
+                    // getViewで対象のViewを更新
+                    mCalendarGridView.getAdapter().getView(mSelectPosition, targetView, mCalendarGridView);
+                    if (mDate != null) {
+                        java.util.Calendar calendar = java.util.Calendar.getInstance();
+                        calendar.setTime(mDate);
+                        if (mFirstSelect) {
+                            mDateString = new SimpleDateFormat("yyyy-MM-dd").format(mDate);
+                            mFirstSelect = false;
+                        } else {
+                            calendar.add(java.util.Calendar.DATE, 1);
+                            mDate = calendar.getTime();
+                            mDateString = new SimpleDateFormat("yyyy-MM-dd").format(mDate);
                         }
+                        calendar.add(java.util.Calendar.DATE, 1);
+                        String nextMonth = new SimpleDateFormat("MM").format(calendar.getTime());
 
-                        final Handler handler = new Handler();
-                        final Runnable runnable = new Runnable() {
+                        //Log.d("root", nextMonth);
+                        Log.d("root", mDateString);
+                        mStartList.add(mDateString + "T17:00:00.000+09:00");
+                        mEndList.add(mDateString + "T19:00:00.000+09:00");
+                        //System.out.println();
 
-                            @Override
-                            public void run() {
-                                handler.postDelayed(this,0050);
-                                View targetViewNextMonth = mCalendarGridView.getChildAt(mSelectPosition);
+                        //日付が来月になる。もしくはGridViewの数が35を超えると来月（NEXTボタン）の処理に
+                        if (!mCalendarAdapter.getTitle().substring(5, 7).equals(nextMonth)) {
 
-                                targetViewNextMonth = mCalendarGridView.getChildAt(mSelectPosition);
-                                targetViewNextMonth.setBackgroundColor(Color.parseColor("#FFFF00"));
-                                return;
+                            mCalendarAdapter.nextMonth();
+                            mSelectPosition = mSelectPosition - 28;
+                            if (mSelectPosition >= 7) {
+                                mSelectPosition -= 7;
                             }
-                        };
-                        handler.post(runnable);
 
-                        Log.d("root", String.valueOf(mSelectPosition));
+                            final Handler handler = new Handler();
+                            final Runnable runnable = new Runnable() {
 
-                        mTitleText.setText(mCalendarAdapter.getTitle());
-                    } else {
-                        ColorDrawable colorDrawable = (ColorDrawable) targetView.getBackground();
-                        mOldGridColor = colorDrawable.getColor();
-                        targetView = mCalendarGridView.getChildAt(mSelectPosition);
-                        targetView.setBackgroundColor(Color.parseColor("#FFFF00"));
+                                @Override
+                                public void run() {
+                                    handler.postDelayed(this, 0050);
+                                    View targetViewNextMonth = mCalendarGridView.getChildAt(mSelectPosition);
 
+                                    targetViewNextMonth = mCalendarGridView.getChildAt(mSelectPosition);
+                                    targetViewNextMonth.setBackgroundColor(Color.parseColor("#FFFF00"));
+                                    return;
+                                }
+                            };
+                            handler.post(runnable);
+
+                            Log.d("root", String.valueOf(mSelectPosition));
+
+                            mTitleText.setText(mCalendarAdapter.getTitle());
+                        } else {
+                            ColorDrawable colorDrawable = (ColorDrawable) targetView.getBackground();
+                            mOldGridColor = colorDrawable.getColor();
+                            targetView = mCalendarGridView.getChildAt(mSelectPosition);
+                            targetView.setBackgroundColor(Color.parseColor("#FFFF00"));
+
+                        }
+                        mLastSelectPosition = mSelectPosition;
+                        oldView = null;
                     }
-
-                    mLastSelectPosition = mSelectPosition;
-                    oldView = null;
-
                 }
             }
         });
@@ -292,6 +320,9 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 getResultsFromApi();
             }
         });
+        Button shiftEnterButton = new Button(this);
+        shiftEnterButton.setText("TEST");
+
         getResultsFromApi();
         getState();
     }
@@ -347,9 +378,8 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         }
         mStartList.clear();
         mEndList.clear();
-
-
     }
+
 
     private void getResultsFromApi() {
         if (!isGooglePlayServicesAvailable()) {
@@ -420,6 +450,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                     this,
                     "このアプリはGoogleアカウントが必要です",
                     REQUEST_PERMISSION_GET_ACCOUNTS, Manifest.permission.GET_ACCOUNTS);
+
         }
     }
 
@@ -543,20 +574,16 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     @Override
     public void onStart() {
         super.onStart();
-
+        chooseAccount();
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
-
-
-
         alertDialog.setMessage("はじめまして");
-
         alertDialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 //初回表示内容
                 setState(PREFERENCE_BOOTED);
                 if (mCredential.getSelectedAccountName() == null) {
-                    chooseAccount();
+
                 }
 
                 getPreSetShift();

@@ -23,7 +23,7 @@
             android:layout_alignParentStart="true"
             android:layout_below="@+id/titleTextView"
             android:gravity="top"
-            android:hint="タイトル（「遅番」など）"
+            android:hint="タイトル（3文字以内推奨！）"
             android:inputType="text" />
 
         <LinearLayout
@@ -137,7 +137,12 @@
                 android:text="OK"/>
 
         </LinearLayout>
-
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/delete_button"
+            android:text="削除"
+            android:background="@color/redColor"/>
 
     </LinearLayout>
 </LinearLayout>
