@@ -46,7 +46,7 @@ public class EntryAddActivity extends AppCompatActivity {
         Switch noticeSwitch = findViewById(R.id.switch_notice);
         Button cancelButton = findViewById(R.id.cancel_button);
         Button OKButton = findViewById(R.id.ok_button);
-        Button delButton = findViewById(R.id.delete_button);
+        final Button delButton = findViewById(R.id.delete_button);
 
         //初期値
         mStartHour =9;
@@ -55,11 +55,11 @@ public class EntryAddActivity extends AppCompatActivity {
         mEndMinute=0;
 
         Intent intent = getIntent();
-        int oldNewCase = intent.getIntExtra("newCase",1);
+        final int oldNewCase = intent.getIntExtra("newCase",1);
         final int position = intent.getIntExtra("position",0);
 
         SharedPreferences pref = getSharedPreferences("preset", MODE_PRIVATE);
-        Gson gson = new Gson();
+        final Gson gson = new Gson();
         mPatternTitle = gson.fromJson(pref.getString("title", ""), new TypeToken<ArrayList<String>>(){}.getType());
         mPatternStartTime = gson.fromJson(pref.getString("startTime", ""), new TypeToken<ArrayList<String>>(){}.getType());
         mPatternEndTime= gson.fromJson(pref.getString("endTime", ""), new TypeToken<ArrayList<String>>(){}.getType());
@@ -233,22 +233,43 @@ public class EntryAddActivity extends AppCompatActivity {
                     Toast.makeText(EntryAddActivity.this,"開始時間と終了時間が同じです",Toast.LENGTH_LONG).show();
                 }
                 else{
-                    mTitle=titleEditText.getText().toString();
-                    mPatternTitle.add(mTitle);
-                    mPatternStartTime.add(String.format("%02d", mStartHour) + ":" + String.format("%02d", mStartMinute));
-                    mPatternEndTime.add(String.format("%02d", mEndHour) + ":" + String.format("%02d", mEndMinute));
-                    mPatternHoliday.add(mHoliday);
-                    mPatternNotice.add(mNotice);
 
                     Gson gson = new Gson();
                     SharedPreferences sharedPreferences = getSharedPreferences("preset", Context.MODE_PRIVATE);
                     SharedPreferences.Editor editor = sharedPreferences.edit();
-                    editor.putString("title", gson.toJson(mPatternTitle));
-                    editor.putString("startTime", gson.toJson(mPatternStartTime));
-                    editor.putString("endTime", gson.toJson(mPatternEndTime));
-                    editor.putString("holiday", gson.toJson(mPatternHoliday));
-                    editor.putString("notice", gson.toJson(mPatternNotice));
-                    editor.apply();
+
+                    if(oldNewCase ==1){
+                        mTitle=titleEditText.getText().toString();
+                        mPatternTitle.add(mTitle);
+                        mPatternStartTime.add(String.format("%02d", mStartHour) + ":" + String.format("%02d", mStartMinute));
+                        mPatternEndTime.add(String.format("%02d", mEndHour) + ":" + String.format("%02d", mEndMinute));
+                        mPatternHoliday.add(mHoliday);
+                        mPatternNotice.add(mNotice);
+
+
+                        editor.putString("title", gson.toJson(mPatternTitle));
+                        editor.putString("startTime", gson.toJson(mPatternStartTime));
+                        editor.putString("endTime", gson.toJson(mPatternEndTime));
+                        editor.putString("holiday", gson.toJson(mPatternHoliday));
+                        editor.putString("notice", gson.toJson(mPatternNotice));
+                        editor.apply();
+                    }
+                    else{
+                        mTitle=titleEditText.getText().toString();
+                        mPatternTitle.set(position,mTitle);
+                        mPatternStartTime.set(position,String.format("%02d", mStartHour) + ":" + String.format("%02d", mStartMinute));
+                        mPatternEndTime.set(position,String.format("%02d", mEndHour) + ":" + String.format("%02d", mEndMinute));
+                        mPatternHoliday.set(position,mHoliday);
+                        mPatternNotice.set(position,mNotice);
+
+                        editor.putString("title", gson.toJson(mPatternTitle));
+                        editor.putString("startTime", gson.toJson(mPatternStartTime));
+                        editor.putString("endTime", gson.toJson(mPatternEndTime));
+                        editor.putString("holiday", gson.toJson(mPatternHoliday));
+                        editor.putString("notice", gson.toJson(mPatternNotice));
+                        editor.apply();
+                    }
+
 
                     finish();
 

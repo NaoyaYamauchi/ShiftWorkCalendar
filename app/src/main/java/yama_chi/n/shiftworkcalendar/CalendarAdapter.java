@@ -28,7 +28,6 @@ public class CalendarAdapter extends BaseAdapter {
         mDateArray = mDateManager.getDays();
     }
 
-
     //カスタムセルの定義
     private static class ViewHolder {
         public TextView dateText;

@@ -53,7 +53,7 @@ public class EntryActivity extends AppCompatActivity {
         mAddButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mTitleList.size() > 8) {
+                if (mTitleList.size() > 7) {
                     Toast.makeText(EntryActivity.this, "すでに最大まで登録されています。", Toast.LENGTH_SHORT).show();
                 } else {
                     Intent intent = new Intent(getApplicationContext(), EntryAddActivity.class);
