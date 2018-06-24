@@ -26,7 +26,9 @@
             android:name=".EntryActivity"
             android:label="@string/title_activity_entry"
             android:theme="@style/AppTheme.NoActionBar" />
-        <activity android:name=".EntryAddActivity"></activity>
+        <activity android:name=".EntryAddActivity" />
+        <activity android:name=".ConfigActivity" />
+        <activity android:name=".HelpActivity"></activity>
     </application>
 
 </manifest>

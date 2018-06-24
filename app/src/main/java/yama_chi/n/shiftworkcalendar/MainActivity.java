@@ -251,8 +251,10 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             public void onClick(View v) {
                 String start = mPatternStartTime.get(1);
                 String end = mPatternEndTime.get(1);
+                String name = mPatternTitle.get(1);
 
                 enterShift(start,end);
+                mCalendarAdapter.ShiftEnter(name);
             }
         });
         mShiftEntryButton[2].setOnClickListener(new View.OnClickListener(){

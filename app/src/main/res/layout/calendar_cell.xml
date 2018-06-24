@@ -15,7 +15,6 @@
         android:layout_height="wrap_content"
         android:layout_below="@+id/dateText"
         android:textAlignment="center"
-
         android:text=""
         android:id="@+id/shiftNameText"/>
 

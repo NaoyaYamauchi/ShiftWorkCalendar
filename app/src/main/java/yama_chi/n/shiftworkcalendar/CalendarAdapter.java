@@ -2,7 +2,6 @@ package yama_chi.n.shiftworkcalendar;
 
 import android.content.Context;
 import android.graphics.Color;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,11 +27,6 @@ public class CalendarAdapter extends BaseAdapter {
         mDateArray = mDateManager.getDays();
     }
 
-    //カスタムセルの定義
-    private static class ViewHolder {
-        public TextView dateText;
-    }
-
     @Override
     public int getCount() {
         return mDateArray.size();
@@ -42,7 +36,8 @@ public class CalendarAdapter extends BaseAdapter {
     public Object getItem(int position) {
         return null;
     }
-    public Date getDate(int position){
+
+    public Date getDate(int position) {
         return mDateArray.get(position);
     }
 
@@ -102,22 +97,35 @@ public class CalendarAdapter extends BaseAdapter {
     }
 
     //表示月の取得
-    public String getTitle(){
-        SimpleDateFormat format = new SimpleDateFormat("yyyy.MM",Locale.US);
+    public String getTitle() {
+        SimpleDateFormat format = new SimpleDateFormat("yyyy.MM", Locale.US);
         return format.format(mDateManager.mCalender.getTime());
     }
 
     //翌月表示
-    public void nextMonth(){
+    public void nextMonth() {
         mDateManager.nextMonth();
         mDateArray = mDateManager.getDays();
         this.notifyDataSetChanged();
     }
+
     //前月表示
-    public void prevMonth(){
+    public void prevMonth() {
         mDateManager.prevMonth();
-        mDateArray= mDateManager.getDays();
+        mDateArray = mDateManager.getDays();
         this.notifyDataSetChanged();
+    }
+
+    public void ShiftEnter(String name) {
+        View convertView = mLayoutInflater.inflate(R.layout.calendar_cell, null);
+        TextView shiftNameText = convertView.findViewById(R.id.shiftNameText);
+        shiftNameText.setText(name);
+    }
+
+    //カスタムセルの定義
+    public static class ViewHolder {
+        public TextView dateText;
+        public TextView shiftNameText;
     }
 
 }
