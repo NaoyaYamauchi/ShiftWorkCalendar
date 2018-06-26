@@ -48,6 +48,9 @@ public class EntryAddActivity extends AppCompatActivity {
         Button OKButton = findViewById(R.id.ok_button);
         final Button delButton = findViewById(R.id.delete_button);
 
+        //通知実装できないので隠しておく
+        noticeSwitch.setVisibility(View.INVISIBLE);
+
         //初期値
         mStartHour =9;
         mStartMinute=0;

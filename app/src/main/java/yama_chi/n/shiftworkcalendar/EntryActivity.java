@@ -22,8 +22,6 @@ public class EntryActivity extends AppCompatActivity {
     private Button mAddButton;
     private ListView mListView;
     private ArrayList<String> mTitleList;
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

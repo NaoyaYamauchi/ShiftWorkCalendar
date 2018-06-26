@@ -20,6 +20,7 @@ public class CalendarAdapter extends BaseAdapter {
     private DateManager mDateManager;
     private LayoutInflater mLayoutInflater;
 
+
     public CalendarAdapter(Context context) {
         mContext = context;
         mLayoutInflater = LayoutInflater.from(mContext);
@@ -48,11 +49,13 @@ public class CalendarAdapter extends BaseAdapter {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
+      //  View view = convertView;
         ViewHolder holder;
         if (convertView == null) {
             convertView = mLayoutInflater.inflate(R.layout.calendar_cell, null);
             holder = new ViewHolder();
             holder.dateText = convertView.findViewById(R.id.dateText);
+            holder.shiftNameText = convertView.findViewById(R.id.shiftNameText);
             convertView.setTag(holder);
         } else {
             holder = (ViewHolder) convertView.getTag();
@@ -116,11 +119,7 @@ public class CalendarAdapter extends BaseAdapter {
         this.notifyDataSetChanged();
     }
 
-    public void ShiftEnter(String name) {
-        View convertView = mLayoutInflater.inflate(R.layout.calendar_cell, null);
-        TextView shiftNameText = convertView.findViewById(R.id.shiftNameText);
-        shiftNameText.setText(name);
-    }
+
 
     //カスタムセルの定義
     public static class ViewHolder {

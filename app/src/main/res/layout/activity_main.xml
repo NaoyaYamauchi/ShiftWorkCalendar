@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:ads="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/grayColor"
+    android:background="#dcdcdc"
     android:orientation="vertical"
     tools:context=".MainActivity">
 
@@ -124,83 +125,95 @@
         android:id="@+id/calendarGridView"
         android:layout_width="match_parent"
         android:layout_height="400dp"
+        android:layout_marginBottom="-120dp"
         android:layout_marginLeft="1dp"
         android:horizontalSpacing="1dp"
         android:numColumns="7"
         android:stretchMode="columnWidth"
-        android:verticalSpacing="1dp">
-    </GridView>
+        android:verticalSpacing="1dp"></GridView>
 
     <LinearLayout
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="-120dp"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:orientation="horizontal">
 
         <Button
             android:id="@+id/enter1_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="text"/>
+            android:backgroundTint="@color/whiteColor"
+            android:text="text" />
+
         <Button
             android:id="@+id/enter2_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="text"/>
+            android:backgroundTint="@color/whiteColor"
+            android:text="text" />
+
         <Button
             android:id="@+id/enter3_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="text"/>
+            android:backgroundTint="@color/whiteColor"
+            android:text="text" />
+
         <Button
             android:id="@+id/enter4_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="text"/>
+            android:backgroundTint="@color/whiteColor"
+            android:text="text" />
     </LinearLayout>
+
     <LinearLayout
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:orientation="horizontal">
 
         <Button
             android:id="@+id/enter5_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="text"/>
+            android:backgroundTint="@color/whiteColor"
+            android:text="text" />
+
         <Button
             android:id="@+id/enter6_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="text"/>
+            android:backgroundTint="@color/whiteColor"
+            android:text="text" />
+
         <Button
             android:id="@+id/enter7_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="text"/>
+            android:backgroundTint="@color/whiteColor"
+            android:text="text" />
+
         <Button
             android:id="@+id/enter8_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="text"/>
+            android:backgroundTint="@color/whiteColor"
+            android:text="text" />
     </LinearLayout>
 
 
     <LinearLayout
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
-
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
         <Button
             android:id="@+id/enter_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="登録"/>
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
+            android:backgroundTint="#ffa500"
+            android:text="登録" />
 
         <Button
             android:id="@+id/pattern_setting"
@@ -220,4 +233,15 @@
             android:layout_height="wrap_content"
             android:text="ヘルプ" />
     </LinearLayout>
+
+
+    <com.google.android.gms.ads.AdView
+        android:id="@+id/adView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        ads:adSize="BANNER"
+        ads:adUnitId="ca-app-pub-3940256099942544/6300978111"></com.google.android.gms.ads.AdView>
+
 </LinearLayout>
