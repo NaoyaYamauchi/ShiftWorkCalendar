@@ -10,12 +10,14 @@ import android.widget.BaseAdapter;
 import android.widget.TextView;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
 public class CalendarAdapter extends BaseAdapter {
     private List<Date> mDateArray;
+    private List<String> mMessage = new ArrayList<String>();
     private Context mContext;
     private DateManager mDateManager;
     private LayoutInflater mLayoutInflater;
@@ -26,6 +28,9 @@ public class CalendarAdapter extends BaseAdapter {
         mLayoutInflater = LayoutInflater.from(mContext);
         mDateManager = new DateManager();
         mDateArray = mDateManager.getDays();
+        for (int i = 0; i < 42; i++) {
+            mMessage.add("");
+        }
     }
 
     @Override
@@ -49,18 +54,25 @@ public class CalendarAdapter extends BaseAdapter {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-      //  View view = convertView;
+        //  View view = convertView;
         ViewHolder holder;
         if (convertView == null) {
             convertView = mLayoutInflater.inflate(R.layout.calendar_cell, null);
             holder = new ViewHolder();
             holder.dateText = convertView.findViewById(R.id.dateText);
-            holder.shiftNameText = convertView.findViewById(R.id.shiftNameText);
             convertView.setTag(holder);
+
+            holder.shiftNameText = convertView.findViewById(R.id.shiftNameText);
         } else {
             holder = (ViewHolder) convertView.getTag();
         }
+        try {
+            holder.shiftNameText.setText(mMessage.get(position + 1));
+        }catch (ArrayIndexOutOfBoundsException e){
 
+        }catch (IndexOutOfBoundsException e){
+
+        }
         //セルのサイズ指定
         float dp = mContext.getResources().getDisplayMetrics().density;
         AbsListView.LayoutParams params = new AbsListView.LayoutParams(parent.getWidth()
@@ -71,6 +83,8 @@ public class CalendarAdapter extends BaseAdapter {
         SimpleDateFormat dateFormat = new SimpleDateFormat("d", Locale.US);
         //これも元は[Locale.US]
         holder.dateText.setText(dateFormat.format(mDateArray.get(position)));
+
+        // holder.shiftNameText.setText(dateFormat.format(mMessage.get(position)));
         //holder.dateText.setText(dateFormat.format(mDateArray.get(position\n"シフト名"));
         //
 
@@ -109,6 +123,10 @@ public class CalendarAdapter extends BaseAdapter {
     public void nextMonth() {
         mDateManager.nextMonth();
         mDateArray = mDateManager.getDays();
+        mMessage.clear();
+        for (int i = 0; i < 42; i++) {
+            mMessage.add("");
+        }
         this.notifyDataSetChanged();
     }
 
@@ -116,15 +134,18 @@ public class CalendarAdapter extends BaseAdapter {
     public void prevMonth() {
         mDateManager.prevMonth();
         mDateArray = mDateManager.getDays();
+        mMessage.clear();
+        for (int i = 0; i < 42; i++) {
+            mMessage.add("");
+        }
         this.notifyDataSetChanged();
     }
-
-
-
+    public void setMessage(int position, String message) {
+        mMessage.set(position, message);
+    }
     //カスタムセルの定義
     public static class ViewHolder {
         public TextView dateText;
         public TextView shiftNameText;
     }
-
 }

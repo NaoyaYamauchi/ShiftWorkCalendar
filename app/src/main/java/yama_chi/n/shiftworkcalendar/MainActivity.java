@@ -3,6 +3,7 @@ package yama_chi.n.shiftworkcalendar;
 import android.Manifest;
 import android.accounts.AccountManager;
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -16,9 +17,12 @@ import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Display;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.GridView;
@@ -60,7 +64,7 @@ import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
 public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks {
-
+    ProgressDialog mProgressDialog;
     //初回起動かどうかの判定
     public static final int PREFERENCE_INIT = 0;
     public static final int PREFERENCE_BOOTED = 1;
@@ -71,7 +75,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     static final int REQUEST_PERMISSION_GET_ACCOUNTS = 1003;
     private static final String ENTRY_BUTTON_TEXT = "登録";
     private static final String PREF_ACCOUNT_NAME = "accountName";
-    private static final String[] SCOPES = {CalendarScopes.CALENDAR_READONLY};
+    private static final String[] SCOPES = {CalendarScopes.CALENDAR};
     GoogleAccountCredential mCredential;
     Date mDate;
     int mOldGridColor;
@@ -97,6 +101,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     private String mDateEndString;
 
     //登録する日時を配列で持つ
+    private ArrayList<String> mTitleList = new ArrayList<String>();
     private ArrayList<String> mStartList = new ArrayList<String>();
     private ArrayList<String> mEndList = new ArrayList<String>();
     private ArrayList<Boolean> mHolidayList = new ArrayList<Boolean>();
@@ -121,6 +126,18 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        WindowManager wm = getWindowManager();
+        Display display = wm.getDefaultDisplay();
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        display.getMetrics(displayMetrics);
+
+        int x = displayMetrics.widthPixels;
+        int y = displayMetrics.heightPixels;
+
+        // プログレスダイアログのメッセージを設定します
+        mProgressDialog = new ProgressDialog(this);
+        mProgressDialog.setMessage("予定を登録しています…");
 
         mAdView = findViewById(R.id.adView);
         //mAdView.setAdSize(AdSize.BANNER);
@@ -255,79 +272,87 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             public void onClick(View v) {
                 String start = mPatternStartTime.get(0);
                 String end = mPatternEndTime.get(0);
+                String title = mPatternTitle.get(0);
                 boolean holiday = mPatternHoliday.get(0);
 
-                enterShift(start, end,holiday);
+                enterShift(title, start, end, holiday);
             }
         });
         mShiftEntryButton[1].setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                String title = mPatternTitle.get(1);
                 String start = mPatternStartTime.get(1);
                 String end = mPatternEndTime.get(1);
                 boolean holiday = mPatternHoliday.get(1);
 
-                enterShift(start, end,holiday);
+                enterShift(title, start, end, holiday);
             }
         });
         mShiftEntryButton[2].setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                String title = mPatternTitle.get(2);
                 String start = mPatternStartTime.get(2);
                 String end = mPatternEndTime.get(2);
                 boolean holiday = mPatternHoliday.get(2);
 
-                enterShift(start, end,holiday);
+                enterShift(title, start, end, holiday);
             }
         });
         mShiftEntryButton[3].setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                String title = mPatternTitle.get(3);
                 String start = mPatternStartTime.get(3);
                 String end = mPatternEndTime.get(3);
                 boolean holiday = mPatternHoliday.get(3);
 
-                enterShift(start, end,holiday);
+                enterShift(title, start, end, holiday);
             }
         });
         mShiftEntryButton[4].setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                String title = mPatternTitle.get(4);
                 String start = mPatternStartTime.get(4);
                 String end = mPatternEndTime.get(4);
                 boolean holiday = mPatternHoliday.get(4);
 
-                enterShift(start, end,holiday);
+                enterShift(title, start, end, holiday);
             }
         });
         mShiftEntryButton[5].setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                String title = mPatternTitle.get(5);
                 String start = mPatternStartTime.get(5);
                 String end = mPatternEndTime.get(5);
                 boolean holiday = mPatternHoliday.get(5);
 
-                enterShift(start, end,holiday);
+                enterShift(title, start, end, holiday);
             }
         });
         mShiftEntryButton[6].setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                String title = mPatternTitle.get(6);
                 String start = mPatternStartTime.get(6);
                 String end = mPatternEndTime.get(6);
                 boolean holiday = mPatternHoliday.get(6);
 
-                enterShift(start, end,holiday);
+                enterShift(title, start, end, holiday);
             }
         });
         mShiftEntryButton[7].setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                String title = mPatternTitle.get(7);
                 String start = mPatternStartTime.get(7);
                 String end = mPatternEndTime.get(7);
                 boolean holiday = mPatternHoliday.get(7);
 
-                enterShift(start, end,holiday);
+                enterShift(title, start, end, holiday);
             }
         });
 
@@ -343,26 +368,30 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         mEntryButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                mProgressDialog.show();
                 getResultsFromApi();
             }
         });
-        Button shiftEnterButton = new Button(this);
-        shiftEnterButton.setText("TEST");
 
         getResultsFromApi();
         getState();
     }
 
-    protected void enterShift(String start, String end,boolean holiday) {
+    protected void enterShift(String title, String start, String end, boolean holiday) {
         Log.d("position", String.valueOf(mSelectPosition));
-        if (mSelectPosition >= 0) {
+        if(mSelectPosition==41){
+            mCalendarAdapter.nextMonth();
+            mTitleText.setText(mCalendarAdapter.getTitle());
+            mSelectPosition=-1;
+        }
+        else if (mSelectPosition >= 0) {
             View targetViewOld = mCalendarGridView.getChildAt(mSelectPosition);
             targetViewOld.setBackgroundColor(mOldGridColor);
             mSelectPosition++;
-            View targetView = mCalendarGridView.getChildAt(mSelectPosition);
+            final View[] targetView = {mCalendarGridView.getChildAt(mSelectPosition)};
 
             // getViewで対象のViewを更新
-            mCalendarGridView.getAdapter().getView(mSelectPosition, targetView, mCalendarGridView);
+            mCalendarGridView.getAdapter().getView(mSelectPosition, targetView[0], mCalendarGridView);
             if (mDate != null) {
                 java.util.Calendar calendar = java.util.Calendar.getInstance();
                 calendar.setTime(mDate);
@@ -373,31 +402,63 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                     calendar.add(java.util.Calendar.DATE, 1);
                 }
 
-                int starthour=Integer.parseInt(start.substring(0,2));
-                int endhour=Integer.parseInt(end.substring(0,2));
+                int starthour = Integer.parseInt(start.substring(0, 2));
+                int endhour = Integer.parseInt(end.substring(0, 2));
 
                 mDate = calendar.getTime();
                 mDateStartString = new SimpleDateFormat("yyyy-MM-dd").format(mDate);
 
-                if(starthour>endhour) {
+                if (starthour > endhour) {
                     calendar.add(java.util.Calendar.DATE, 1);
                     mDate = calendar.getTime();
                 }
                 mDateEndString = new SimpleDateFormat("yyyy-MM-dd").format(mDate);
                 System.out.println(mDateStartString);
-                if(starthour>endhour) {
+                if (starthour > endhour) {
                     calendar.add(java.util.Calendar.DATE, -1);
                     mDate = calendar.getTime();
                 }
+                calendar.add(java.util.Calendar.DATE, 1);
 
                 String nextMonth = new SimpleDateFormat("MM").format(calendar.getTime());
+                calendar.add(java.util.Calendar.DATE, -1);
 
-                //Log.d("root", nextMonth);
-                Log.d("root", mDateStartString);
+
+
+                mTitleList.add(title);
                 mHolidayList.add(holiday);
                 mStartList.add(mDateStartString + "T" + start + ":00.000+09:00");
                 mEndList.add(mDateEndString + "T" + end + ":00.000+09:00");
                 //System.out.println();
+                //同じ日付で追加されていないか比較
+                Log.d("root", mDateStartString);
+                int daburiCheck=0;
+                int daburiBefore=0;
+                boolean daburiBool=false;
+                for(int i = 0;i<mStartList.size();i++){
+                    if(mDateStartString.equals(mStartList.get(i).substring(0,10))){
+                        daburiCheck++;
+                        if(daburiCheck==1&&daburiBool==false){
+                            daburiBefore=i;
+                            daburiBool=true;
+                        }
+                        Log.d("daburi", i+"番目");
+                        if(daburiCheck==2){
+                            mTitleList.remove(daburiBefore);
+                            mHolidayList.remove(daburiBefore);
+                            mStartList.remove(daburiBefore);
+                            mEndList.remove(daburiBefore);
+                            Log.d("daburi", "ダブった！");
+                            Log.d("daburi", i+"番目");
+                            daburiBool = false;
+
+                        }
+                    }
+                }
+
+                mCalendarAdapter.setMessage(mSelectPosition, title);
+
+                mCalendarAdapter.notifyDataSetChanged();
 
                 //日付が来月になる。もしくはGridViewの数が35を超えると来月（NEXTボタン）の処理に
                 if (!mCalendarAdapter.getTitle().substring(5, 7).equals(nextMonth)) {
@@ -411,41 +472,52 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                             mSelectPosition -= 7;
                         }
 
-                        final Handler handler = new Handler();
-                        final Runnable runnable = new Runnable() {
+                        final Handler handle = new Handler();
+                        final Runnable runnabl = new Runnable() {
 
                             @Override
                             public void run() {
-                                handler.postDelayed(this, 0050);
+                                handle.postDelayed(this, 0050);
                                 View targetViewNextMonth = mCalendarGridView.getChildAt(mSelectPosition);
 
                                 targetViewNextMonth = mCalendarGridView.getChildAt(mSelectPosition);
                                 targetViewNextMonth.setBackgroundColor(Color.parseColor("#FFFF00"));
+                                mLastSelectPosition = mSelectPosition;
+
                                 return;
                             }
                         };
-                        handler.post(runnable);
+                        handle.post(runnabl);
 
                         Log.d("root", String.valueOf(mSelectPosition));
 
                         mTitleText.setText(mCalendarAdapter.getTitle());
 
-                    }
-                    else{
-                        ColorDrawable colorDrawable = (ColorDrawable) targetView.getBackground();
-                        mOldGridColor = colorDrawable.getColor();
-                        targetView = mCalendarGridView.getChildAt(mSelectPosition);
-                        targetView.setBackgroundColor(Color.parseColor("#FFFF00"));
+
+                    } else {
+                        targetView[0] = mCalendarGridView.getChildAt(mSelectPosition);
+                        targetView[0].setBackgroundColor(Color.parseColor("#FFFF00"));
                     }
                 } else {
-                    ColorDrawable colorDrawable = (ColorDrawable) targetView.getBackground();
-                    mOldGridColor = colorDrawable.getColor();
-                    targetView = mCalendarGridView.getChildAt(mSelectPosition);
-                    targetView.setBackgroundColor(Color.parseColor("#FFFF00"));
+                    final Handler handler = new Handler();
+                    final Runnable runnable = new Runnable() {
+
+                        @Override
+                        public void run() {
+                            handler.postDelayed(this, 0050);
+                            ColorDrawable colorDrawable = (ColorDrawable) targetView[0].getBackground();
+                             targetView[0] = mCalendarGridView.getChildAt(mSelectPosition);
+                            targetView[0].setBackgroundColor(Color.parseColor("#FFFF00"));
+
+                            return;
+                        }
+                    };
+                    handler.post(runnable);
 
                 }
                 mLastSelectPosition = mSelectPosition;
                 oldView = null;
+
             }
         } else {
             Toast.makeText(MainActivity.this, "先に日付をタップしてください", Toast.LENGTH_LONG).show();
@@ -456,10 +528,10 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         for (int i = 0; i < mStartList.size(); i++) {
 
             //休みだったら登録しない。
-            if(!mHolidayList.get(i)){
+            if (!mHolidayList.get(i)) {
                 //シフト登録のテスト
                 Event event = new Event()
-                        .setSummary("ShiftWorkText");//タイトル
+                        .setSummary(mTitleList.get(i));//タイトル
                 //開始時間
                 DateTime startDateTime = new DateTime(mStartList.get(i));
                 EventDateTime start = new EventDateTime()
@@ -495,6 +567,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         }
         mStartList.clear();
         mEndList.clear();
+
     }
 
 
@@ -797,6 +870,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
         @Override
         protected void onPostExecute(String output) {
+            mProgressDialog.hide();
             if (output == null || output.isEmpty()) {
             } else {
                 Toast.makeText(MainActivity.this, "カレンダーを生成しました。", Toast.LENGTH_LONG).show();
@@ -807,6 +881,8 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
         @Override
         protected void onCancelled() {
+
+            mProgressDialog.hide();
             if (mLastError != null) {
                 if (mLastError instanceof GooglePlayServicesAvailabilityIOException) {
                     showGooglePlayServicesAvailabilityErrorDialog(

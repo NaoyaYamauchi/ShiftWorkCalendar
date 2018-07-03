@@ -30,7 +30,7 @@
             android:layout_marginLeft="10dp"
             android:layout_marginVertical="10dp"
             android:background="@color/colorAccent"
-            android:text="Prev" />
+            android:text="前月" />
 
         <Button
             android:id="@+id/nextButton"
@@ -40,7 +40,7 @@
             android:layout_marginRight="10dp"
             android:layout_marginVertical="10dp"
             android:background="@color/colorAccent"
-            android:text="Next" />
+            android:text="翌月" />
 
     </RelativeLayout>
 
@@ -133,9 +133,10 @@
         android:verticalSpacing="1dp"></GridView>
 
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:gravity="top|center"
         android:orientation="horizontal">
 
         <Button
@@ -168,9 +169,11 @@
     </LinearLayout>
 
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:layout_marginTop="-5dp"
         android:layout_weight="1"
+        android:gravity="top|center"
         android:orientation="horizontal">
 
         <Button
@@ -204,33 +207,38 @@
 
 
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:gravity="top|center">
 
         <Button
             android:id="@+id/enter_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:backgroundTint="#ffa500"
+            android:drawableTop="@drawable/icon_entry"
             android:text="登録" />
 
         <Button
             android:id="@+id/pattern_setting"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:drawableTop="@drawable/icon_pattern"
             android:text="パターン登録" />
 
         <Button
             android:id="@+id/config"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:drawableTop="@drawable/icon_config"
             android:text="設定" />
 
         <Button
             android:id="@+id/help"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:drawableTop="@drawable/icon_help"
             android:text="ヘルプ" />
     </LinearLayout>
 
@@ -242,6 +250,6 @@
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         ads:adSize="BANNER"
-        ads:adUnitId="ca-app-pub-3940256099942544/6300978111"></com.google.android.gms.ads.AdView>
+        ads:adUnitId="ca-app-pub-7578219808125514/4764874194"></com.google.android.gms.ads.AdView>
 
 </LinearLayout>

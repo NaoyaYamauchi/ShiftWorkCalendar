@@ -34,7 +34,7 @@ public class ConfigActivity extends AppCompatActivity {
 
         mListView = findViewById(R.id.listView);
 
-        mSubList.add("nasama0@gmail.com");
+        mSubList.add(account);
         //mSubList.add("30分");
         //mSubList.add("メール");
 
