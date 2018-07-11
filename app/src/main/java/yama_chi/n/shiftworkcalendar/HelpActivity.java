@@ -23,7 +23,6 @@ public class HelpActivity extends AppCompatActivity {
         int x = displayMetrics.widthPixels;
         int y = displayMetrics.heightPixels;
 
-
         int a = displayMetrics.densityDpi;
         float b = displayMetrics.density;
 

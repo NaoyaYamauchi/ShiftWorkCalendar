@@ -64,7 +64,6 @@ import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
 public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks {
-    ProgressDialog mProgressDialog;
     //初回起動かどうかの判定
     public static final int PREFERENCE_INIT = 0;
     public static final int PREFERENCE_BOOTED = 1;
@@ -76,6 +75,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     private static final String ENTRY_BUTTON_TEXT = "登録";
     private static final String PREF_ACCOUNT_NAME = "accountName";
     private static final String[] SCOPES = {CalendarScopes.CALENDAR};
+    ProgressDialog mProgressDialog;
     GoogleAccountCredential mCredential;
     Date mDate;
     int mOldGridColor;
@@ -377,21 +377,20 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         getState();
     }
 
-    protected void enterShift(String title, String start, String end, boolean holiday) {
+    protected void enterShift(final String title, String start, String end, boolean holiday) {
         Log.d("position", String.valueOf(mSelectPosition));
-        if(mSelectPosition==41){
-            mCalendarAdapter.nextMonth();
-            mTitleText.setText(mCalendarAdapter.getTitle());
-            mSelectPosition=-1;
-        }
-        else if (mSelectPosition >= 0) {
+         if (mSelectPosition >= 0) {
             View targetViewOld = mCalendarGridView.getChildAt(mSelectPosition);
             targetViewOld.setBackgroundColor(mOldGridColor);
             mSelectPosition++;
             final View[] targetView = {mCalendarGridView.getChildAt(mSelectPosition)};
 
             // getViewで対象のViewを更新
-            mCalendarGridView.getAdapter().getView(mSelectPosition, targetView[0], mCalendarGridView);
+             try {
+                 mCalendarGridView.getAdapter().getView(mSelectPosition, targetView[0], mCalendarGridView);
+             }catch (IndexOutOfBoundsException e){
+
+             }
             if (mDate != null) {
                 java.util.Calendar calendar = java.util.Calendar.getInstance();
                 calendar.setTime(mDate);
@@ -424,7 +423,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 calendar.add(java.util.Calendar.DATE, -1);
 
 
-
                 mTitleList.add(title);
                 mHolidayList.add(holiday);
                 mStartList.add(mDateStartString + "T" + start + ":00.000+09:00");
@@ -432,45 +430,58 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 //System.out.println();
                 //同じ日付で追加されていないか比較
                 Log.d("root", mDateStartString);
-                int daburiCheck=0;
-                int daburiBefore=0;
-                boolean daburiBool=false;
-                for(int i = 0;i<mStartList.size();i++){
-                    if(mDateStartString.equals(mStartList.get(i).substring(0,10))){
+                int daburiCheck = 0;
+                int daburiBefore = 0;
+                boolean daburiBool = false;
+                for (int i = 0; i < mStartList.size(); i++) {
+                    if (mDateStartString.equals(mStartList.get(i).substring(0, 10))) {
                         daburiCheck++;
-                        if(daburiCheck==1&&daburiBool==false){
-                            daburiBefore=i;
-                            daburiBool=true;
+                        if (daburiCheck == 1 && daburiBool == false) {
+                            daburiBefore = i;
+                            daburiBool = true;
                         }
-                        Log.d("daburi", i+"番目");
-                        if(daburiCheck==2){
+                        Log.d("daburi", i + "番目");
+                        if (daburiCheck == 2) {
                             mTitleList.remove(daburiBefore);
                             mHolidayList.remove(daburiBefore);
                             mStartList.remove(daburiBefore);
                             mEndList.remove(daburiBefore);
                             Log.d("daburi", "ダブった！");
-                            Log.d("daburi", i+"番目");
+                            Log.d("daburi", i + "番目");
                             daburiBool = false;
 
                         }
                     }
                 }
 
-                mCalendarAdapter.setMessage(mSelectPosition, title);
+                if(mCalendarAdapter.getTitle().substring(5, 7).equals(nextMonth)){
 
-                mCalendarAdapter.notifyDataSetChanged();
+                    mCalendarAdapter.setMessage(mSelectPosition, title);
 
+                    mCalendarAdapter.notifyDataSetChanged();
+                }
+
+                //Log.d("gettitle",mDateStartString);
                 //日付が来月になる。もしくはGridViewの数が35を超えると来月（NEXTボタン）の処理に
                 if (!mCalendarAdapter.getTitle().substring(5, 7).equals(nextMonth)) {
                     int prev = Integer.parseInt(mCalendarAdapter.getTitle().substring(5, 7));
                     int next = Integer.parseInt(nextMonth);
+                    Log.d("mDate", String.valueOf(mSelectPosition));
+                    Log.d("mDate", String.valueOf(mDate));
 
-                    if (prev < next) {
-                        mCalendarAdapter.nextMonth();
-                        mSelectPosition = mSelectPosition - 28;
-                        if (mSelectPosition >= 7) {
-                            mSelectPosition -= 7;
+                    /*
+                    次月が前月より大きい場合
+                    次月が1月の場合
+                     */
+                    if (prev < next || next ==1) {
+                        if((prev !=1 || next !=12)&&(prev !=2 || next !=1)){
+                            mCalendarAdapter.nextMonth();
+                            mSelectPosition = mSelectPosition - 28;
+                            if(mSelectPosition >7) {
+                                mSelectPosition -= 7;
+                            }
                         }
+
 
                         final Handler handle = new Handler();
                         final Runnable runnabl = new Runnable() {
@@ -492,11 +503,29 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                         Log.d("root", String.valueOf(mSelectPosition));
 
                         mTitleText.setText(mCalendarAdapter.getTitle());
+                        mCalendarAdapter.setMessage(mSelectPosition, title);
+                        mCalendarAdapter.notifyDataSetChanged();
 
 
                     } else {
-                        targetView[0] = mCalendarGridView.getChildAt(mSelectPosition);
-                        targetView[0].setBackgroundColor(Color.parseColor("#FFFF00"));
+
+                        final Handler handle = new Handler();
+                        final Runnable runnabl = new Runnable() {
+
+                            @Override
+                            public void run() {
+                                handle.postDelayed(this, 0050);
+                                targetView[0] = mCalendarGridView.getChildAt(mSelectPosition);
+                                targetView[0].setBackgroundColor(Color.parseColor("#FFFF00"));
+
+                                return;
+                            }
+                        };
+                        handle.post(runnabl);
+
+                        mCalendarAdapter.setMessage(mSelectPosition, title);
+                        mCalendarAdapter.notifyDataSetChanged();
+
                     }
                 } else {
                     final Handler handler = new Handler();
@@ -506,7 +535,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                         public void run() {
                             handler.postDelayed(this, 0050);
                             ColorDrawable colorDrawable = (ColorDrawable) targetView[0].getBackground();
-                             targetView[0] = mCalendarGridView.getChildAt(mSelectPosition);
+                            targetView[0] = mCalendarGridView.getChildAt(mSelectPosition);
                             targetView[0].setBackgroundColor(Color.parseColor("#FFFF00"));
 
                             return;
@@ -569,7 +598,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         mEndList.clear();
 
     }
-
 
     private void getResultsFromApi() {
         if (!isGooglePlayServicesAvailable()) {
@@ -743,7 +771,6 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         sharedPreferences.edit().putInt("InitState", state).commit();
 
     }
-
 
     @Override
     public void onStart() {
