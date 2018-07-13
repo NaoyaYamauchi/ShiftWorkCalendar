@@ -5,6 +5,7 @@ import android.accounts.AccountManager;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -16,6 +17,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -147,19 +149,78 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
         mTitleText = findViewById(R.id.titleText);
         mPrevButton = findViewById(R.id.prevButton);
+        final AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
+
         mPrevButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mCalendarAdapter.prevMonth();
-                mTitleText.setText(mCalendarAdapter.getTitle());
+                if (mTitleList.size() > 0) {
+
+                    alertDialog.setMessage("月を切り替えると編集中のシフトがクリアされます。よろしいでしょうか？");
+
+                    alertDialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            mStartList.clear();
+                            mEndList.clear();
+                            mTitleList.clear();
+
+                            mSelectPosition = -1;
+
+                            mCalendarAdapter.prevMonth();
+                            mTitleText.setText(mCalendarAdapter.getTitle());
+
+                        }
+                    });
+                    alertDialog.setNegativeButton("キャンセル", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            //なにもしない
+                        }
+                    });
+                    alertDialog.show();
+                } else {
+                    mCalendarAdapter.prevMonth();
+                    mTitleText.setText(mCalendarAdapter.getTitle());
+                }
+
             }
         });
         mNextButton = findViewById(R.id.nextButton);
         mNextButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mCalendarAdapter.nextMonth();
-                mTitleText.setText(mCalendarAdapter.getTitle());
+
+                if (mTitleList.size() > 0) {
+
+                    alertDialog.setMessage("月を切り替えると編集中のシフトがクリアされます。よろしいでしょうか？");
+
+                    alertDialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            mStartList.clear();
+                            mEndList.clear();
+                            mTitleList.clear();
+
+                            mSelectPosition = -1;
+
+                            mCalendarAdapter.nextMonth();
+                            mTitleText.setText(mCalendarAdapter.getTitle());
+
+                        }
+                    });
+                    alertDialog.setNegativeButton("キャンセル", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            //なにもしない
+                        }
+                    });
+                    alertDialog.show();
+                } else {
+                    mCalendarAdapter.nextMonth();
+                    mTitleText.setText(mCalendarAdapter.getTitle());
+                }
+
             }
         });
 
@@ -379,18 +440,18 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
     protected void enterShift(final String title, String start, String end, boolean holiday) {
         Log.d("position", String.valueOf(mSelectPosition));
-         if (mSelectPosition >= 0) {
+        if (mSelectPosition >= 0) {
             View targetViewOld = mCalendarGridView.getChildAt(mSelectPosition);
             targetViewOld.setBackgroundColor(mOldGridColor);
             mSelectPosition++;
             final View[] targetView = {mCalendarGridView.getChildAt(mSelectPosition)};
 
             // getViewで対象のViewを更新
-             try {
-                 mCalendarGridView.getAdapter().getView(mSelectPosition, targetView[0], mCalendarGridView);
-             }catch (IndexOutOfBoundsException e){
+            try {
+                mCalendarGridView.getAdapter().getView(mSelectPosition, targetView[0], mCalendarGridView);
+            } catch (IndexOutOfBoundsException e) {
 
-             }
+            }
             if (mDate != null) {
                 java.util.Calendar calendar = java.util.Calendar.getInstance();
                 calendar.setTime(mDate);
@@ -419,7 +480,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 }
                 calendar.add(java.util.Calendar.DATE, 1);
 
-                String nextMonth = new SimpleDateFormat("MM").format(calendar.getTime());
+                final String nextMonth = new SimpleDateFormat("MM").format(calendar.getTime());
                 calendar.add(java.util.Calendar.DATE, -1);
 
 
@@ -454,7 +515,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                     }
                 }
 
-                if(mCalendarAdapter.getTitle().substring(5, 7).equals(nextMonth)){
+                if (mCalendarAdapter.getTitle().substring(5, 7).equals(nextMonth)) {
 
                     mCalendarAdapter.setMessage(mSelectPosition, title);
 
@@ -464,69 +525,109 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 //Log.d("gettitle",mDateStartString);
                 //日付が来月になる。もしくはGridViewの数が35を超えると来月（NEXTボタン）の処理に
                 if (!mCalendarAdapter.getTitle().substring(5, 7).equals(nextMonth)) {
-                    int prev = Integer.parseInt(mCalendarAdapter.getTitle().substring(5, 7));
-                    int next = Integer.parseInt(nextMonth);
-                    Log.d("mDate", String.valueOf(mSelectPosition));
-                    Log.d("mDate", String.valueOf(mDate));
+                    System.out.println("タップしたやつ" + mDateStartString);
+                    System.out.println("今の月" + mCalendarAdapter.getTitle());
+
+                    if (mCalendarAdapter.getTitle().substring(5, 7).equals(mDateStartString.substring(5, 7))) {
+                        entryAlert();
+                    } else {
+                        System.out.println(mTitleList.size());
+                        if (mTitleList.size() > 1) {
+                            int prev = Integer.parseInt(mCalendarAdapter.getTitle().substring(5, 7));
+                            int next = Integer.parseInt(nextMonth);
+                            Log.d("mDate", String.valueOf(mSelectPosition));
+                            Log.d("mDate", String.valueOf(mDate));
+
+                            if (prev < next || next == 1) {
+                                if ((prev != 1 || next != 12) && (prev != 2 || next != 1)) {
+                                    AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
+
+                                    alertDialog.setMessage("月を切り替えると編集中のシフトがクリアされます。よろしいでしょうか？");
+                                    alertDialog.setCancelable(false);
+                                    alertDialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            mStartList.clear();
+                                            mEndList.clear();
+                                            mTitleList.clear();
+
+                                            mCalendarAdapter.nextMonth();
+                                            mSelectPosition = -1;
+                                            mTitleText.setText(mCalendarAdapter.getTitle());
+                                            mLastSelectPosition = -101;
+                                        }
+
+                                    });
+                                    alertDialog.setNegativeButton("キャンセル", new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            mCalendarAdapter.setMessage(mSelectPosition, "");
+                                            mCalendarAdapter.notifyDataSetChanged();
+                                            mSelectPosition = -1;
+                                        }
+                                    });
+                                    alertDialog.show();
+                                    mTitleText.setText(mCalendarAdapter.getTitle());
+                                }
+                            }
+                            mTitleText.setText(mCalendarAdapter.getTitle());
+
+                        } else {
+                            int prev = Integer.parseInt(mCalendarAdapter.getTitle().substring(5, 7));
+                            int next = Integer.parseInt(nextMonth);
+                            Log.d("mDate", String.valueOf(mSelectPosition));
+                            Log.d("mDate", String.valueOf(mDate));
 
                     /*
                     次月が前月より大きい場合
                     次月が1月の場合
                      */
-                    if (prev < next || next ==1) {
-                        if((prev !=1 || next !=12)&&(prev !=2 || next !=1)){
-                            mCalendarAdapter.nextMonth();
-                            mSelectPosition = mSelectPosition - 28;
-                            if(mSelectPosition >7) {
-                                mSelectPosition -= 7;
+                            if (prev < next || next == 1) {
+                                if ((prev != 1 || next != 12) && (prev != 2 || next != 1)) {
+                                    mCalendarAdapter.nextMonth();
+                                    mSelectPosition = mSelectPosition - 28;
+                                    if (mSelectPosition > 7) {
+                                        mSelectPosition -= 7;
+                                    }
+                                    Log.d("mDate", String.valueOf(mDate).substring(8,10));
+                                    int i = Integer.parseInt(String.valueOf(mDate).substring(8,10));
+                                    if(i>=7){
+                                        mSelectPosition += 7;
+                                    }
+                                    mTitleText.setText(mCalendarAdapter.getTitle());
+                                    mCalendarAdapter.notifyDataSetChanged();
+                                }
                             }
+
                         }
+                    }
 
 
-                        final Handler handle = new Handler();
-                        final Runnable runnabl = new Runnable() {
+                    final Handler handle = new Handler();
+                    final Runnable runnabl = new Runnable() {
 
-                            @Override
-                            public void run() {
-                                handle.postDelayed(this, 0050);
-                                View targetViewNextMonth = mCalendarGridView.getChildAt(mSelectPosition);
-
-                                targetViewNextMonth = mCalendarGridView.getChildAt(mSelectPosition);
-                                targetViewNextMonth.setBackgroundColor(Color.parseColor("#FFFF00"));
-                                mLastSelectPosition = mSelectPosition;
-
-                                return;
-                            }
-                        };
-                        handle.post(runnabl);
-
-                        Log.d("root", String.valueOf(mSelectPosition));
-
-                        mTitleText.setText(mCalendarAdapter.getTitle());
-                        mCalendarAdapter.setMessage(mSelectPosition, title);
-                        mCalendarAdapter.notifyDataSetChanged();
-
-
-                    } else {
-
-                        final Handler handle = new Handler();
-                        final Runnable runnabl = new Runnable() {
-
-                            @Override
-                            public void run() {
-                                handle.postDelayed(this, 0050);
+                        @Override
+                        public void run() {
+                            handle.postDelayed(this, 0050);
+                            try {
                                 targetView[0] = mCalendarGridView.getChildAt(mSelectPosition);
                                 targetView[0].setBackgroundColor(Color.parseColor("#FFFF00"));
+                            } catch (NullPointerException e) {
 
-                                return;
                             }
-                        };
-                        handle.post(runnabl);
+                            return;
+                        }
+                    };
+                    handle.post(runnabl);
 
+                    try{
                         mCalendarAdapter.setMessage(mSelectPosition, title);
-                        mCalendarAdapter.notifyDataSetChanged();
+                    }catch (IndexOutOfBoundsException e){
 
                     }
+                    mCalendarAdapter.notifyDataSetChanged();
+
+
                 } else {
                     final Handler handler = new Handler();
                     final Runnable runnable = new Runnable() {
@@ -534,9 +635,14 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                         @Override
                         public void run() {
                             handler.postDelayed(this, 0050);
-                            ColorDrawable colorDrawable = (ColorDrawable) targetView[0].getBackground();
-                            targetView[0] = mCalendarGridView.getChildAt(mSelectPosition);
-                            targetView[0].setBackgroundColor(Color.parseColor("#FFFF00"));
+                            try {
+                                ColorDrawable colorDrawable = (ColorDrawable) targetView[0].getBackground();
+                                targetView[0] = mCalendarGridView.getChildAt(mSelectPosition);
+
+                                targetView[0].setBackgroundColor(Color.parseColor("#FFFF00"));
+                            } catch (NullPointerException e) {
+
+                            }
 
                             return;
                         }
@@ -548,9 +654,35 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 oldView = null;
 
             }
+
         } else {
             Toast.makeText(MainActivity.this, "先に日付をタップしてください", Toast.LENGTH_LONG).show();
         }
+    }
+
+    private void entryAlert() {
+        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
+
+        alertDialog.setMessage("今月の最後の日付に達しました。登録しますか？");
+        alertDialog.setCancelable(false);
+        alertDialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                mProgressDialog.show();
+                getResultsFromApi();
+                mSelectPosition = -1;
+                mTitleText.setText(mCalendarAdapter.getTitle());
+                mCalendarAdapter.notifyDataSetChanged();
+            }
+        });
+        alertDialog.setNegativeButton("キャンセル", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                mSelectPosition = -1;
+                mCalendarAdapter.notifyDataSetChanged();
+            }
+        });
+        alertDialog.show();
     }
 
     protected void calendarEntry() throws IOException {
@@ -590,12 +722,13 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 event.setReminders(reminders);
 
                 event = mService.events().insert(mCalendarId, event).execute();
-                System.out.println(event.getHtmlLink());
+
             }
 
         }
         mStartList.clear();
         mEndList.clear();
+        mTitleList.clear();
 
     }
 
@@ -780,8 +913,9 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         //初回表示内容
         setState(PREFERENCE_BOOTED);
         if (mCredential.getSelectedAccountName() == null) {
-
-            getPreSetShift();
+            if (mPatternTitle.size() == 0) {
+                getPreSetShift();
+            }
         }
         System.out.println(mCredential.getSelectedAccountName());
     }

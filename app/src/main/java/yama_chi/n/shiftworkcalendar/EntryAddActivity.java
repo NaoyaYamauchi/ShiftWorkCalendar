@@ -226,6 +226,8 @@ public class EntryAddActivity extends AppCompatActivity {
                 finish();
             }
         });
+        final AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
+
         OKButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -236,49 +238,74 @@ public class EntryAddActivity extends AppCompatActivity {
                     Toast.makeText(EntryAddActivity.this,"開始時間と終了時間が同じです",Toast.LENGTH_LONG).show();
                 }
                 else{
+                    Boolean holiday_already = false;
+                    for(int i =0;i<mPatternHoliday.size();i++){
+                        if(mPatternHoliday.get(i)){
+                            holiday_already =true;
+                        }
+                    }
+                    if(holiday_already){
+                        alertDialog.setMessage("すでに「休み」として設定されたシフトがあります。登録しますか？");
 
-                    Gson gson = new Gson();
-                    SharedPreferences sharedPreferences = getSharedPreferences("preset", Context.MODE_PRIVATE);
-                    SharedPreferences.Editor editor = sharedPreferences.edit();
+                        alertDialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                entry();
+                            }
+                        });
+                        alertDialog.setNegativeButton("キャンセル", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
 
-                    if(oldNewCase ==1){
-                        mTitle=titleEditText.getText().toString();
-                        mPatternTitle.add(mTitle);
-                        mPatternStartTime.add(String.format("%02d", mStartHour) + ":" + String.format("%02d", mStartMinute));
-                        mPatternEndTime.add(String.format("%02d", mEndHour) + ":" + String.format("%02d", mEndMinute));
-                        mPatternHoliday.add(mHoliday);
-                        mPatternNotice.add(mNotice);
-
-
-                        editor.putString("title", gson.toJson(mPatternTitle));
-                        editor.putString("startTime", gson.toJson(mPatternStartTime));
-                        editor.putString("endTime", gson.toJson(mPatternEndTime));
-                        editor.putString("holiday", gson.toJson(mPatternHoliday));
-                        editor.putString("notice", gson.toJson(mPatternNotice));
-                        editor.apply();
+                            }
+                        });
+                        alertDialog.show();
                     }
                     else{
-                        mTitle=titleEditText.getText().toString();
-                        mPatternTitle.set(position,mTitle);
-                        mPatternStartTime.set(position,String.format("%02d", mStartHour) + ":" + String.format("%02d", mStartMinute));
-                        mPatternEndTime.set(position,String.format("%02d", mEndHour) + ":" + String.format("%02d", mEndMinute));
-                        mPatternHoliday.set(position,mHoliday);
-                        mPatternNotice.set(position,mNotice);
-
-                        editor.putString("title", gson.toJson(mPatternTitle));
-                        editor.putString("startTime", gson.toJson(mPatternStartTime));
-                        editor.putString("endTime", gson.toJson(mPatternEndTime));
-                        editor.putString("holiday", gson.toJson(mPatternHoliday));
-                        editor.putString("notice", gson.toJson(mPatternNotice));
-                        editor.apply();
+                        entry();
                     }
-
-
-                    finish();
-
                 }
             }
+            private void entry(){
+                Gson gson = new Gson();
+                SharedPreferences sharedPreferences = getSharedPreferences("preset", Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+
+                if(oldNewCase ==1){
+                    mTitle=titleEditText.getText().toString();
+                    mPatternTitle.add(mTitle);
+                    mPatternStartTime.add(String.format("%02d", mStartHour) + ":" + String.format("%02d", mStartMinute));
+                    mPatternEndTime.add(String.format("%02d", mEndHour) + ":" + String.format("%02d", mEndMinute));
+                    mPatternHoliday.add(mHoliday);
+                    mPatternNotice.add(mNotice);
+
+
+                    editor.putString("title", gson.toJson(mPatternTitle));
+                    editor.putString("startTime", gson.toJson(mPatternStartTime));
+                    editor.putString("endTime", gson.toJson(mPatternEndTime));
+                    editor.putString("holiday", gson.toJson(mPatternHoliday));
+                    editor.putString("notice", gson.toJson(mPatternNotice));
+                    editor.apply();
+                }
+                else{
+                    mTitle=titleEditText.getText().toString();
+                    mPatternTitle.set(position,mTitle);
+                    mPatternStartTime.set(position,String.format("%02d", mStartHour) + ":" + String.format("%02d", mStartMinute));
+                    mPatternEndTime.set(position,String.format("%02d", mEndHour) + ":" + String.format("%02d", mEndMinute));
+                    mPatternHoliday.set(position,mHoliday);
+                    mPatternNotice.set(position,mNotice);
+
+                    editor.putString("title", gson.toJson(mPatternTitle));
+                    editor.putString("startTime", gson.toJson(mPatternStartTime));
+                    editor.putString("endTime", gson.toJson(mPatternEndTime));
+                    editor.putString("holiday", gson.toJson(mPatternHoliday));
+                    editor.putString("notice", gson.toJson(mPatternNotice));
+                    editor.apply();
+                }
+                finish();
+            }
         });
+
         delButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -313,4 +340,5 @@ public class EntryAddActivity extends AppCompatActivity {
         });
 
     }
+
 }
