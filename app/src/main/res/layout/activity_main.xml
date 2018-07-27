@@ -30,7 +30,8 @@
             android:layout_marginLeft="10dp"
             android:layout_marginVertical="10dp"
             android:background="@color/colorAccent"
-            android:text="前月" />
+            android:textColor="@color/whiteColor"
+            android:text="前の月" />
 
         <Button
             android:id="@+id/nextButton"
@@ -39,8 +40,9 @@
             android:layout_alignParentRight="true"
             android:layout_marginRight="10dp"
             android:layout_marginVertical="10dp"
+            android:textColor="@color/whiteColor"
             android:background="@color/colorAccent"
-            android:text="翌月" />
+            android:text="次の月" />
 
     </RelativeLayout>
 
