@@ -431,6 +431,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             public void onClick(View v) {
                 mProgressDialog.show();
                 getResultsFromApi();
+                System.out.println(mCalendarId);
             }
         });
 
@@ -726,6 +727,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             }
 
         }
+        mHolidayList.clear();
         mStartList.clear();
         mEndList.clear();
         mTitleList.clear();
@@ -950,6 +952,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     }
 
     private class MakeRequestTask extends AsyncTask<Void, Void, String> {
+        private Exception mLastError = null;
 
         MakeRequestTask(GoogleAccountCredential credential) {
             HttpTransport transport = AndroidHttp.newCompatibleTransport();
@@ -972,12 +975,12 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         }
 
         private String createCalendar() throws IOException {
+
             String pageToken = null;
             boolean calendarBool = false;
 
             SharedPreferences sharedPreferences = getSharedPreferences("Id", Context.MODE_PRIVATE);
             mCalendarId = sharedPreferences.getString("ShiftCalendarId", "null");
-
             do {
                 CalendarList calendarList = mService.calendarList().list().setPageToken(pageToken).execute();
                 List<CalendarListEntry> items = calendarList.getItems();
@@ -1021,6 +1024,8 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 SharedPreferences.Editor editor = sharedPreferences.edit();
                 editor.putString("ShiftCalendarId", mCalendarId);
                 editor.apply();
+
+                calendarEntry();
                 // 新規に作成したカレンダーのIDを返却する
                 return mCalendarId;
             } else {

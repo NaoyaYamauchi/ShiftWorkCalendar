@@ -42,7 +42,7 @@ public class EntryAddActivity extends AppCompatActivity {
         final TextView startTime = findViewById(R.id.startTime);
         final TextView endTime = findViewById(R.id.endTime);
         final TextView cautionText = findViewById(R.id.cautionText);
-        Switch holidaySwitch = findViewById(R.id.switch_holiday);
+        final Switch holidaySwitch = findViewById(R.id.switch_holiday);
         Switch noticeSwitch = findViewById(R.id.switch_notice);
         Button cancelButton = findViewById(R.id.cancel_button);
         Button OKButton = findViewById(R.id.ok_button);
@@ -244,7 +244,7 @@ public class EntryAddActivity extends AppCompatActivity {
                             holiday_already =true;
                         }
                     }
-                    if(holiday_already){
+                    if(holiday_already && mHoliday==true){
                         alertDialog.setMessage("すでに「休み」として設定されたシフトがあります。登録しますか？");
 
                         alertDialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
